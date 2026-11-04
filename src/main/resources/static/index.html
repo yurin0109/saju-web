@@ -1,0 +1,2959 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Among the Stars · 수많은 별 속에서 나를 발견하는 시간</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ───────── Figma 디자인 토큰 ───────── */
+  :root {
+    --bg: #100d18;
+    --card: #1b1626;
+    --card-2: #221c2f;
+    --line: #393044;
+    --text: #faf6ff;
+    --body: #d4cbd5;
+    --muted: #b6aabd;
+    --accent: #ff70cf;
+    --accent-soft: rgba(255, 112, 207, 0.1);
+    --accent-line: rgba(255, 112, 207, 0.3);
+    --on-accent: #21132f;
+    --danger: #ff8a8a;
+
+    --wood: #2e744b;
+    --fire: #b54643;
+    --earth: #967333;
+    --metal: #727e98;
+    --water: #2f6ba5;
+
+    --serif: "Noto Serif KR", serif;
+    --sans: "Noto Sans KR", system-ui, sans-serif;
+    --radius: 12px;
+    --pad-x: 80px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; background: none; border: none; }
+
+  /* ───────── 상단 내비게이션 (탭) ───────── */
+  .nav {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 88px; padding: 0 var(--pad-x);
+    background: rgba(16, 13, 24, 0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand { display: flex; align-items: center; gap: 12px; cursor: pointer; }
+  .brand-star { width: 25px; height: 25px; color: var(--accent); }
+  .brand-name { font-family: var(--serif); font-weight: 600; font-size: 27px; }
+  .brand-desc { position: relative; font-size: 12px; line-height: 1.45; color: var(--muted); padding-left: 14px; border-left: 1px solid var(--line); white-space: nowrap; }
+
+  .tabs { display: flex; gap: 30px; height: 88px; }
+  .tab {
+    display: flex; align-items: center; height: 88px;
+    font-size: 14px; color: var(--muted);
+    border-bottom: 2px solid transparent;
+    transition: color .15s;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--text); }
+  .tab[aria-selected="true"] { color: var(--accent); font-weight: 700; border-bottom-color: var(--accent); }
+
+  .nav-help { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); transition: color .15s; }
+  .nav-help:hover { color: var(--text); }
+
+  /* ───────── 공통 레이아웃 ───────── */
+  main { min-height: calc(100vh - 88px - 119px); }
+  .panel { display: none; padding: 36px var(--pad-x) 64px; flex-direction: column; gap: 28px; }
+  .panel.active { display: flex; }
+
+  .crumb-row { display: flex; justify-content: space-between; align-items: center; }
+  .crumb { font-size: 12px; color: var(--muted); }
+  .tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 100px;
+    background: var(--accent-soft); color: var(--accent);
+    font-size: 12px; font-weight: 500; white-space: nowrap;
+  }
+  .chip {
+    padding: 5px 13px; border-radius: 100px;
+    border: 1px solid var(--accent-line); color: var(--accent);
+    font-size: 12px; white-space: nowrap;
+  }
+
+  .intro { display: flex; flex-direction: column; gap: 10px; }
+  .eyebrow { font-size: 12px; font-weight: 700; color: var(--accent); }
+  .title { font-family: var(--serif); font-weight: 500; font-size: 36px; line-height: 1.4; }
+  .lead { font-size: 15px; color: var(--muted); }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 28px;
+  }
+  .card-title { font-size: 18px; font-weight: 500; }
+  .card-sub { font-size: 11px; color: var(--muted); }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 14px;
+    height: 52px; padding: 0 28px; border-radius: 999px;
+    font-weight: 700; font-size: 15px;
+    border: 1px solid var(--accent);
+    transition: transform .1s, opacity .15s;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn-primary { background: var(--accent); color: var(--on-accent); }
+  .btn-ghost { color: var(--accent); background: transparent; }
+  .btn-line { border-color: var(--line); color: var(--text); }
+  .btn-lg { height: 60px; font-size: 16px; }
+  .btn:disabled { opacity: .45; cursor: not-allowed; }
+  .link { color: var(--accent); font-size: 12px; cursor: pointer; background: none; border: none; }
+  .link:hover { text-decoration: underline; }
+
+  .grid-2 { display: grid; grid-template-columns: 1.78fr 1fr; gap: 24px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+  .grid-half { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+
+  .notice { font-size: 12px; color: var(--muted); }
+
+  /* ───────── 홈 ───────── */
+  .hero {
+    position: relative; overflow: hidden;
+    border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 64px; min-height: 520px;
+    display: flex; flex-direction: column; justify-content: center;
+    background:
+      radial-gradient(circle at 78% 30%, rgba(255,112,207,.22), transparent 42%),
+      radial-gradient(circle at 92% 80%, rgba(47,107,165,.25), transparent 40%),
+      linear-gradient(90deg, var(--bg) 35%, #1a1426 100%);
+  }
+  .stars { position: absolute; inset: 0; pointer-events: none; }
+  .stars i {
+    position: absolute; width: 2px; height: 2px; border-radius: 50%;
+    background: #fff; opacity: .5; animation: twinkle 3s infinite ease-in-out;
+  }
+  @keyframes twinkle { 50% { opacity: .1; } }
+  .hero-orbit {
+    position: absolute; right: 8%; top: 50%; transform: translateY(-50%);
+    width: 340px; height: 340px; border-radius: 50%;
+    border: 1px solid rgba(255,112,207,.25);
+  }
+  .hero-orbit::before, .hero-orbit::after {
+    content: ""; position: absolute; border-radius: 50%;
+    border: 1px dashed rgba(250,246,255,.15);
+  }
+  .hero-orbit::before { inset: 40px; }
+  .hero-orbit::after { inset: 100px; border-style: solid; border-color: rgba(255,112,207,.4); background: radial-gradient(circle, rgba(255,112,207,.18), transparent 70%); }
+  .orbit-dot { position: absolute; width: 46px; height: 46px; }
+  .brand-logo { height: 62px; width: auto; margin-left: -8px; filter: brightness(1.25) saturate(1.7) drop-shadow(0 0 5px rgba(200, 175, 255, .55)) drop-shadow(0 0 16px rgba(255, 112, 207, .3)); }
+  .brand { position: relative; }
+  .brand::before { content: ""; position: absolute; left: -40px; top: 50%; width: 300px; height: 110px; transform: translateY(-50%); pointer-events: none; background: radial-gradient(ellipse at 45% 50%, rgba(255, 112, 207, .16), rgba(120, 90, 220, .1) 45%, transparent 72%); }
+  .brand-logo { position: relative; }
+  .hero-content { position: relative; max-width: 660px; display: flex; flex-direction: column; gap: 24px; }
+  .hero h1 { font-family: var(--serif); font-weight: 500; font-size: 52px; line-height: 1.35; }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero p { font-size: 16px; color: var(--body); max-width: 510px; }
+  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  .manifesto {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 20px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+    font-family: var(--serif); font-size: 15px; color: var(--body);
+  }
+  .manifesto span.star { color: var(--accent); }
+
+  .feature { padding: 26px; display: flex; flex-direction: column; gap: 12px; cursor: pointer; transition: border-color .15s; }
+  .feature:hover { border-color: var(--accent-line); }
+  .feature-icon { font-size: 28px; }
+  .feature-topic { font-size: 12px; color: var(--accent); }
+  .feature h3 { font-size: 20px; font-weight: 500; font-family: var(--serif); }
+  .feature p { font-size: 14px; color: var(--muted); }
+  .feature .q { font-size: 13px; color: var(--body); border-top: 1px solid var(--line); padding-top: 14px; margin-top: 4px; }
+
+  .section-title { font-family: var(--serif); font-size: 28px; font-weight: 500; }
+  .step { display: flex; flex-direction: column; gap: 10px; padding-top: 22px; border-top: 1px solid var(--line); }
+  .step-num { font-size: 13px; color: var(--accent); font-weight: 700; }
+  .step h4 { font-size: 18px; font-weight: 500; }
+  .step p { font-size: 14px; color: var(--muted); }
+
+  .invite {
+    display: flex; align-items: center; justify-content: space-between; gap: 24px;
+    padding: 32px 36px;
+  }
+  .invite h3 { font-family: var(--serif); font-size: 24px; font-weight: 500; }
+
+  /* ───────── 사주 입력 폼 ───────── */
+  .form-wrap { display: grid; grid-template-columns: 760fr 528fr; gap: 24px; align-items: start; }
+  .form { padding: 32px; display: flex; flex-direction: column; gap: 24px; }
+  .form-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .form-head h2 { font-size: 18px; font-weight: 500; }
+  .req-note { font-size: 11px; color: var(--muted); }
+  .req { color: var(--accent); }
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  .field label, .field .label { font-size: 13px; font-weight: 500; }
+  .help { font-size: 12px; color: var(--muted); }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .row-cal { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
+
+  .input, select.input {
+    height: 48px; width: 100%; padding: 0 16px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+    font-size: 14px; color: var(--text); outline: none;
+    color-scheme: dark;
+    transition: border-color .15s;
+  }
+  .input:focus { border-color: var(--accent); }
+  .input:disabled { opacity: .4; }
+  .input.invalid { border-color: var(--danger); }
+
+  .segment {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    height: 48px; padding: 4px; border-radius: 8px;
+    background: var(--bg); border: 1px solid var(--line);
+  }
+  .segment button {
+    border-radius: 6px; font-size: 13px; color: var(--muted);
+  }
+  .segment button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+  .segment button:disabled { cursor: not-allowed; opacity: .5; }
+
+  .check { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; user-select: none; }
+  .check input { width: 16px; height: 16px; accent-color: var(--accent); }
+
+  .divider { height: 1px; background: var(--line); border: 0; }
+  .form-error { font-size: 13px; color: var(--danger); min-height: 20px; }
+  .form-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .help-panel { padding: 28px; display: flex; flex-direction: column; gap: 20px; }
+  .help-visual {
+    height: 200px; border-radius: 10px; border: 1px solid var(--line);
+    background:
+      radial-gradient(circle at 30% 40%, rgba(255,112,207,.25), transparent 50%),
+      radial-gradient(circle at 75% 70%, rgba(47,107,165,.3), transparent 45%),
+      var(--card-2);
+    display: grid; place-items: center; font-size: 44px; letter-spacing: 10px;
+  }
+  .help-panel h3 { font-family: var(--serif); font-size: 24px; font-weight: 500; line-height: 1.5; }
+  .help-panel p { font-size: 14px; color: var(--muted); }
+  .four-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center; }
+  .four-pillars div { padding: 12px 0; border: 1px solid var(--line); border-radius: 8px; }
+  .four-pillars b { display: block; font-family: var(--serif); font-size: 18px; font-weight: 500; }
+  .four-pillars span { font-size: 11px; color: var(--muted); }
+
+  /* ───────── 결과 ───────── */
+  .profile-bar { display: flex; align-items: center; gap: 24px; padding: 20px; flex-wrap: wrap; }
+  .profile-name { display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700; }
+  .profile-info { font-size: 13px; color: var(--muted); }
+
+  .pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .pillar-mean { display: block; white-space: nowrap; font-style: normal; font-size: 11px; color: var(--muted); opacity: .8; margin-top: 2px; }
+  .howto { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 18px; }
+  .howto summary { cursor: pointer; font-size: 14px; font-weight: 500; color: var(--accent); list-style: none; display: flex; align-items: center; gap: 8px; }
+  .howto summary::-webkit-details-marker { display: none; }
+  .howto summary::after { content: "펼치기 ▾"; font-size: 12px; font-weight: 400; color: var(--muted); margin-left: auto; }
+  .howto[open] summary::after { content: "접기 ▴"; }
+  .howto-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
+  .howto-item { padding: 16px; border-radius: 10px; background: var(--card-2); border: 1px solid var(--line); }
+  .howto-item > b { display: block; font-size: 13px; color: var(--text); margin-bottom: 8px; }
+  .howto-item p { font-size: 13px; color: var(--body); line-height: 1.75; }
+  .howto-item p b { color: var(--accent); font-weight: 500; }
+  .howto-dots { display: flex; flex-wrap: wrap; gap: 4px 10px; margin: 6px 0; font-size: 12px; }
+  .howto-dots i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1px solid; vertical-align: -1px; margin-right: 4px; }
+  .howto-foot { margin-top: 14px; font-size: 13px; color: var(--muted); line-height: 1.75; }
+  .howto-foot b { color: var(--body); font-weight: 500; }
+  @media (max-width: 1100px) { .howto-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 720px) { .howto-grid { grid-template-columns: 1fr; } .pillar-mean { font-size: 10px; } }
+  .pillar { text-align: center; display: flex; flex-direction: column; gap: 8px; }
+  .pillar-label { font-size: 12px; color: var(--muted); }
+  .pillar-char {
+    height: 64px; border-radius: 10px; display: grid; place-items: center;
+    font-family: var(--serif); font-size: 28px; font-weight: 600;
+    border: 1px solid var(--line); position: relative;
+  }
+  .pillar-char small { position: absolute; bottom: 4px; right: 8px; font-family: var(--sans); font-size: 10px; font-weight: 400; color: rgba(250,246,255,.7); }
+  .pillar-char.empty { color: var(--muted); font-size: 14px; font-family: var(--sans); font-weight: 400; border-style: dashed; }
+  .pillar-char.me { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .el-WOOD { background: rgba(46,116,75,.35); border-color: var(--wood); }
+  .el-FIRE { background: rgba(181,70,67,.35); border-color: var(--fire); }
+  .el-EARTH { background: rgba(150,115,51,.35); border-color: var(--earth); }
+  .el-METAL { background: rgba(114,126,152,.35); border-color: var(--metal); }
+  .el-WATER { background: rgba(47,107,165,.35); border-color: var(--water); }
+
+  .core { padding: 36px; display: flex; flex-direction: column; gap: 24px; }
+  .core-headline { font-family: var(--serif); font-size: 32px; line-height: 1.55; white-space: pre-line; }
+  .core-desc { font-size: 15px; color: var(--body); line-height: 1.9; white-space: pre-line; }
+  .chips { display: flex; gap: 10px; flex-wrap: wrap; }
+  .basis { font-size: 12px; color: var(--muted); padding: 10px 14px; border-radius: 8px; background: var(--card-2); }
+  .basis b { color: var(--accent); font-weight: 500; }
+
+  .el-list { display: flex; flex-direction: column; gap: 17px; }
+  .el-item { display: flex; flex-direction: column; gap: 10px; }
+  .el-head { display: flex; justify-content: space-between; align-items: center; }
+  .el-label { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 500; }
+  .el-pct { font-size: 13px; font-weight: 700; color: var(--accent); }
+  .bar { height: 10px; border-radius: 100px; background: var(--line); overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 100px; width: 0; transition: width .8s cubic-bezier(.2,.8,.2,1); }
+
+  .avatar {
+    width: 40px; height: 40px; border-radius: 20px; border: 1px solid;
+    display: grid; place-items: center; overflow: hidden; flex-shrink: 0;
+    font-size: 22px; background: var(--card-2);
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .avatar.lg { width: 52px; height: 52px; border-radius: 26px; font-size: 28px; }
+
+  .tip-card { display: flex; flex-direction: column; gap: 14px; }
+  .tip-card .head { display: flex; align-items: center; gap: 12px; }
+  .tip-card h3 { font-size: 16px; font-weight: 500; }
+  .tip-card p { font-size: 14px; color: var(--body); line-height: 1.8; white-space: pre-line; }
+
+  .reflect { display: flex; flex-direction: column; gap: 14px; background: linear-gradient(160deg, #2a1d36, var(--card)); }
+  .reflect .q { font-family: var(--serif); font-size: 22px; line-height: 1.55; min-height: 2.4em; transition: opacity .2s; }
+  .reflect .q.fade { opacity: .25; }
+  .reflect-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .reflect-input {
+    height: auto; min-height: 116px; padding: 14px 16px; resize: vertical; line-height: 1.7;
+    background: rgba(16, 13, 24, .7); font-size: 14px;
+  }
+  .reflect-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .char-count { font-size: 11px; color: var(--muted); }
+  .btn-sm { height: 40px; padding: 0 18px; font-size: 13px; gap: 8px; }
+  .reflect-saved { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .side .reflect .q { font-size: 18px; }
+
+  .empty-state { text-align: center; padding: 80px 24px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .empty-state .big { font-size: 48px; }
+  .empty-state h3 { font-family: var(--serif); font-size: 24px; font-weight: 500; }
+  .empty-state p { color: var(--muted); font-size: 14px; }
+
+  /* ───────── 올해 운세 ───────── */
+  .year-hero {
+    height: 180px; border-radius: 10px; border: 1px solid var(--line);
+    background:
+      radial-gradient(ellipse at 70% 50%, rgba(250,246,255,.12), transparent 50%),
+      radial-gradient(circle at 20% 30%, rgba(255,112,207,.2), transparent 40%),
+      var(--card-2);
+    display: flex; align-items: center; justify-content: center; gap: 18px;
+    font-family: var(--serif);
+  }
+  .year-hero .ganji { font-size: 56px; font-weight: 600; letter-spacing: 6px; }
+  .year-hero .ganji-sub { font-size: 14px; color: var(--muted); font-family: var(--sans); }
+  .reading { display: grid; grid-template-columns: 1fr 280px; gap: 28px; align-items: start; }
+  .reading-main { padding: 32px; display: flex; flex-direction: column; gap: 22px; }
+  .summary-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .summary-card { padding: 16px; border-radius: 10px; background: var(--card-2); border: 1px solid var(--line); }
+  .summary-card .k { font-size: 11px; color: var(--muted); }
+  .summary-card .v { font-size: 14px; font-weight: 500; margin-top: 6px; }
+  .chapter-label { font-size: 12px; color: var(--accent); }
+  .chapter-title { font-family: var(--serif); font-size: 26px; font-weight: 500; }
+  .reading-body { font-size: 15px; color: var(--body); line-height: 1.9; white-space: pre-line; }
+  .action-box { display: flex; gap: 14px; padding: 18px; border-radius: 10px; border: 1px solid var(--accent-line); background: var(--accent-soft); }
+  .action-box .t { font-size: 13px; font-weight: 700; color: var(--accent); }
+  .action-box .c { font-size: 14px; color: var(--body); margin-top: 4px; }
+  .side { display: flex; flex-direction: column; gap: 20px; }
+  .side .card { padding: 24px; }
+  .side h4 { font-size: 13px; color: var(--accent); font-weight: 500; margin-bottom: 10px; }
+  .relation-map { display: flex; flex-direction: column; gap: 10px; font-size: 13px; }
+  .relation-map .rel { display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 6px; color: var(--muted); }
+  .relation-map .rel.on { background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+
+  /* ───────── 직장운 · 결혼운 ───────── */
+  .topic-hero {
+    height: 160px; border-radius: 10px; border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center; gap: 22px;
+    font-family: var(--serif); text-align: center;
+  }
+  .topic-hero .big { font-size: 46px; }
+  .topic-hero .lbl { font-size: 13px; color: var(--muted); font-family: var(--sans); }
+  .topic-hero .val { font-size: 26px; font-weight: 500; }
+  .career-hero { background: radial-gradient(circle at 25% 40%, rgba(150,115,51,.28), transparent 45%), radial-gradient(circle at 80% 60%, rgba(255,112,207,.18), transparent 45%), var(--card-2); }
+  .marriage-hero { background: radial-gradient(circle at 30% 50%, rgba(255,112,207,.28), transparent 45%), radial-gradient(circle at 75% 40%, rgba(181,70,67,.22), transparent 45%), var(--card-2); }
+  .art-hero { height: auto; min-height: 170px; padding: 12px 20px; gap: 18px; flex-wrap: wrap; }
+  .art { width: 220px; height: 140px; flex-shrink: 0; }
+  .reunion-hero { background: radial-gradient(circle at 30% 45%, rgba(244,197,106,.22), transparent 45%), radial-gradient(circle at 75% 60%, rgba(255,90,122,.16), transparent 45%), var(--card-2); }
+  .cp-hero { display: flex; align-items: center; justify-content: center; gap: 28px; padding: 24px 16px; border-radius: 14px;
+    background: radial-gradient(circle at 50% 50%, rgba(255,112,207,.22), transparent 60%), var(--card-2); border: 1px solid var(--accent-line); }
+  .cp-who { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+  .cp-ava { width: 96px; height: 96px; border-radius: 50%; border: 3px solid; overflow: hidden; box-shadow: 0 0 22px rgba(255,112,207,.25); }
+  .cp-ava img { width: 100%; height: 100%; object-fit: cover; }
+  .cp-who b { font-size: 16px; }
+  .cp-who small { font-size: 12px; color: var(--muted); }
+  .cp-mid { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .art-heart { width: 58px; height: 52px; transform-origin: center; }
+  .cp-score { font-family: var(--serif); font-size: 40px; color: var(--accent); line-height: 1; }
+  .cp-score small { font-size: 16px; }
+  .cp-grade { text-align: center; font-family: var(--serif); font-size: 20px; margin: 4px 0 8px; }
+  @media (max-width: 600px) {
+    .art { width: 180px; height: 115px; }
+    .cp-hero { gap: 12px; padding: 18px 8px; }
+    .cp-ava { width: 70px; height: 70px; }
+    .cp-score { font-size: 30px; }
+    .art-heart { width: 44px; height: 40px; }
+  }
+  .fields { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tg-list { display: flex; flex-direction: column; gap: 12px; }
+  .tg-row { display: grid; grid-template-columns: 52px 1fr 36px; align-items: center; gap: 10px; font-size: 13px; }
+  .tg-row b { font-weight: 500; }
+  .tg-row.on b, .tg-row.on .pct { color: var(--accent); font-weight: 700; }
+  .tg-row .pct { text-align: right; color: var(--muted); font-size: 12px; }
+  .tg-row .bar i { background: linear-gradient(90deg, #8f5bd6, var(--accent)); }
+  .tg-row:not(.on) .bar i { background: #6a5a7d; }
+  .palace { display: flex; align-items: center; gap: 14px; }
+  .palace .pillar-char { width: 64px; flex-shrink: 0; }
+  .side-note { font-size: 14px; color: var(--body); line-height: 1.7; }
+
+  /* ───────── 유료 리포트 · 잠금 · 결제 ───────── */
+  .tab .lock { font-size: 10px; margin-left: 3px; opacity: .7; }
+  .paid-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .paid-card { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+  .paid-card .ch { font-size: 12px; color: var(--accent); }
+  .paid-card h3 { font-size: 18px; font-weight: 500; }
+  .paid-card p { font-size: 13px; color: var(--muted); line-height: 1.7; flex: 1; }
+  .paid-card .foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .price { font-weight: 700; font-size: 16px; }
+  .price small { font-size: 12px; color: var(--muted); font-weight: 400; margin-left: 4px; }
+  .tag.open { background: rgba(126, 211, 155, .12); color: #9fe0b4; }
+  .bundle-bar { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 22px 26px; border-radius: var(--radius); border: 1px solid var(--accent-line);
+    background: linear-gradient(120deg, rgba(255,112,207,.14), rgba(143,91,214,.12)); }
+  .bundle-bar h3 { font-family: var(--serif); font-size: 20px; font-weight: 500; }
+  .bundle-bar .save { font-size: 12px; color: var(--accent); }
+  .locked { position: relative; overflow: hidden; }
+  .locked-preview { filter: blur(6px); opacity: .45; pointer-events: none; user-select: none; display: flex; flex-direction: column; gap: 16px; }
+  .locked-preview .ph { height: 14px; border-radius: 7px; background: var(--line); }
+  .lock-panel { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; text-align: center; padding: 24px; background: radial-gradient(circle, rgba(16,13,24,.55), rgba(16,13,24,.9) 70%); }
+  .lock-panel .big { font-size: 40px; }
+  .lock-panel h3 { font-family: var(--serif); font-size: 24px; font-weight: 500; }
+  .lock-panel p { font-size: 14px; color: var(--body); max-width: 460px; line-height: 1.7; }
+  .lock-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  .include-list { list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: var(--body); }
+  .include-list li::before { content: "✦ "; color: var(--accent); }
+  .pay { width: min(520px, calc(100vw - 32px)); min-width: 0; box-sizing: border-box; padding: 30px; display: flex; flex-direction: column; gap: 18px; }
+  .pay h3 { font-family: var(--serif); font-size: 24px; font-weight: 500; }
+  .pay-row { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+  .pay-row .k { color: var(--muted); flex-shrink: 0; }
+  .pay-row span:last-child { min-width: 0; text-align: right; word-break: keep-all; overflow-wrap: anywhere; }
+  @media (max-width: 600px) { .pay { padding: 22px; } .pay .modal-actions .btn { flex: 1; } }
+  .pay-total { display: flex; justify-content: space-between; align-items: baseline; padding-top: 14px; border-top: 1px solid var(--line); }
+  .pay-total b { font-size: 26px; color: var(--accent); }
+  .pay-note { font-size: 12px; color: var(--muted); line-height: 1.7; padding: 12px 14px; border-radius: 8px; background: var(--card-2); }
+  .pay-error { font-size: 13px; color: var(--danger); min-height: 18px; }
+  .buy-card { padding: 24px 28px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .buy-card h3 { font-size: 17px; font-weight: 500; }
+  .buy-card .meta { font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .buy-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  @media (max-width: 1100px) { .paid-grid { grid-template-columns: 1fr; } }
+
+  /* ───────── 리포트 · 심화 리포트 ───────── */
+  .rep-sec { display: flex; flex-direction: column; gap: 14px; padding-top: 32px; border-top: 1px solid var(--line); }
+  .rep-sec:first-child { border-top: 0; padding-top: 0; }
+  .rep-sec h3 { font-family: var(--serif); font-size: 21px; font-weight: 500; }
+  .rep-lead { font-size: 13px; color: var(--accent); }
+  .cy-line { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; position: relative; }
+  .cy-line::before { content: ""; position: absolute; top: 28px; left: 16%; right: 16%; height: 2px; background: linear-gradient(90deg, var(--accent), #8f5bd6); opacity: .5; }
+  .cy-node { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 6px; padding: 0 12px 20px; }
+  .cy-dot { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font-size: 26px; background: var(--card-2); border: 2px solid var(--line); z-index: 1; }
+  .cy-node.now .cy-dot { border-color: var(--accent); box-shadow: 0 0 18px rgba(255,112,207,.45); }
+  .cy-year { font-weight: 700; margin-top: 6px; }
+  .cy-year em { font-style: normal; font-size: 11px; color: #1a1020; background: var(--accent); padding: 1px 7px; border-radius: 999px; margin-left: 4px; }
+  .cy-mood { font-family: var(--serif); font-size: 18px; font-weight: 500; }
+  .cy-tag { font-size: 12px; color: var(--accent); }
+  .cy-score { display: flex; align-items: center; gap: 3px; }
+  .cy-score small { font-size: 11px; color: var(--muted); margin-right: 4px; }
+  .cy-score i { width: 14px; height: 6px; border-radius: 3px; background: var(--line); }
+  .cy-score i.on { background: var(--accent); }
+  .cy-node p { font-size: 13px; line-height: 1.7; color: var(--body); margin-top: 4px; }
+  .job-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .job-card { padding: 20px; border-radius: 14px; background: var(--card-2); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+  .job-card.best { border-color: var(--accent); background: rgba(255,112,207,.07); }
+  .job-top { display: flex; align-items: center; gap: 10px; }
+  .job-medal { font-size: 26px; }
+  .job-top b { font-family: var(--serif); font-size: 18px; font-weight: 500; }
+  .job-match { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--muted); }
+  .job-bar { flex: 1; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .job-bar i { display: block; height: 100%; background: linear-gradient(90deg, #8f5bd6, var(--accent)); }
+  .job-match strong { color: var(--accent); font-size: 14px; }
+  .job-card p { font-size: 14px; line-height: 1.7; color: var(--body); }
+  @media (max-width: 700px) {
+    .cy-line { grid-template-columns: 1fr; gap: 0; }
+    .cy-line::before { top: 28px; bottom: 28px; left: 27px; right: auto; width: 2px; height: auto; background: linear-gradient(180deg, var(--accent), #8f5bd6); }
+    .cy-node { display: grid; grid-template-columns: 56px 1fr; column-gap: 14px; text-align: left; align-items: start; padding: 0 0 18px; }
+    .cy-node > *:not(.cy-dot) { grid-column: 2; }
+    .cy-dot { grid-row: 1 / span 6; }
+    .cy-year { margin-top: 0; }
+    .job-grid { grid-template-columns: 1fr; }
+  }
+  .office-hero { display: flex; align-items: center; gap: 16px; padding: 18px 22px; border-radius: 14px;
+    background: linear-gradient(120deg, rgba(255,112,207,.14), rgba(143,91,214,.1)); border: 1px solid var(--accent-line); }
+  .office-emoji { font-size: 44px; line-height: 1; }
+  .office-hero b { display: block; font-family: var(--serif); font-size: 22px; font-weight: 500; margin-top: 4px; }
+  .office-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .office-card { padding: 20px; border-radius: 14px; background: var(--card-2); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+  .office-top { display: flex; align-items: center; gap: 8px; }
+  .office-top > span:first-child { font-size: 22px; }
+  .office-top b { font-size: 16px; }
+  .chem { margin-left: auto; font-size: 12px; letter-spacing: -1px; }
+  .chem i { font-style: normal; opacity: .35; }
+  .chem small { font-size: 11px; color: var(--muted); letter-spacing: 0; margin-right: 4px; }
+  .office-say { font-family: var(--serif); font-size: 17px; color: var(--accent); }
+  .office-text { font-size: 14px; line-height: 1.75; color: var(--body); }
+  @media (max-width: 900px) { .office-grid { grid-template-columns: 1fr; } }
+  .sw-top { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px; border-radius: 14px; background: var(--card-2); border: 1px solid var(--line); }
+  .sw-keys { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .sw-keys span { font-size: 13px; color: var(--muted); width: 64px; flex-shrink: 0; }
+  .sw-keys em { font-style: normal; font-size: 13px; padding: 5px 12px; border-radius: 999px; border: 1px solid var(--accent-line); color: var(--accent); background: rgba(255,112,207,.08); }
+  .sw-keys.weak em { border-color: rgba(185,166,255,.4); color: #c5b5ff; background: rgba(185,166,255,.08); }
+  .sw-keys.fill em { border-color: rgba(126,211,155,.4); color: #9fe0b4; background: rgba(126,211,155,.08); }
+  .sw-prose { display: flex; flex-direction: column; gap: 12px; }
+  .sw-prose h4 { font-size: 15px; color: var(--accent); margin-top: 8px; }
+  .tg-cols { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .tg-col { display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--card-2); }
+  .tg-col.top { border-color: var(--accent); background: rgba(255,112,207,.08); }
+  .tg-head { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; font-size: 14px; }
+  .tg-pct { font-weight: 700; }
+  .tg-col.top .tg-pct { color: var(--accent); }
+  .tg-mini { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .tg-mini i { display: block; height: 100%; border-radius: 3px; background: linear-gradient(90deg, #8f5bd6, var(--accent)); }
+  .tg-col:not(.top) .tg-mini i { opacity: .55; }
+  .tg-col p { font-size: 12px; color: var(--muted); line-height: 1.5; word-break: keep-all; }
+  .tg-col p em { font-style: normal; color: var(--accent); }
+  .tg-col p em.dim { color: var(--muted); font-weight: 700; }
+  @media (max-width: 900px) { .tg-cols { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 600px) { .tg-cols { grid-template-columns: repeat(2, 1fr); } .tg-col { padding: 12px; } }
+  .lucky { display: flex; flex-direction: column; gap: 14px; }
+  .lucky-hero { display: flex; align-items: center; justify-content: center; text-align: left; gap: 16px; padding: 18px 20px; border-radius: 14px;
+    background: linear-gradient(120deg, rgba(255,112,207,.14), rgba(143,91,214,.1)); border: 1px solid var(--accent-line); }
+  .lucky-hero b { display: block; font-family: var(--serif); font-size: 20px; font-weight: 500; margin: 4px 0; }
+  .lucky-hero p { font-size: 13px; color: var(--muted); }
+  .lucky-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; }
+  .lucky-grid > .lucky-card { grid-column: span 2; }
+  .lucky-card { padding: 24px 20px; border-radius: 14px; background: var(--card-2); border: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 12px; }
+  .lucky-card .chips { justify-content: center; }
+  .lucky-grid > .lucky-card.wide { grid-column: span 3; }
+  .lucky-card .lk { font-size: 13px; color: var(--muted); }
+  .lucky-card strong { font-size: 16px; font-weight: 500; }
+  .lucky-card strong.big { font-family: var(--serif); font-size: 20px; }
+  .lucky-card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .swatches { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+  .swatches span { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 13px; }
+  .swatches i { width: 34px !important; height: 34px !important; }
+  .swatches i { width: 28px; height: 28px; border-radius: 50%; border: 2px solid rgba(255,255,255,.25); box-shadow: 0 0 12px rgba(255,255,255,.08); }
+  .compass-row { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 8px; }
+  .compass { position: relative; width: 46px; height: 46px; border-radius: 50%; border: 2px solid var(--line); flex-shrink: 0; }
+  .compass b { position: absolute; left: 50%; top: 4px; width: 0; height: 0; margin-left: -6px; border: 6px solid transparent;
+    border-bottom: 17px solid var(--accent); border-top: 0; transform-origin: 6px 19px; }
+  .compass.center b { top: 50%; left: 50%; margin: -5px 0 0 -5px; width: 10px; height: 10px; border: 0; border-radius: 50%; background: var(--accent); }
+  .compass em { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 10px; font-style: normal; color: var(--muted); }
+  @media (max-width: 800px) { .lucky-grid { grid-template-columns: 1fr; } .lucky-grid > .lucky-card, .lucky-grid > .lucky-card.wide { grid-column: auto; } }
+  .area-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .area-card { padding: 24px; border-radius: 14px; background: var(--card-2); border: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+  .area-top { display: flex; align-items: center; gap: 12px; }
+  .area-icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 22px; background: rgba(255,112,207,.12); }
+  .area-name { display: block; font-size: 13px; color: var(--muted); }
+  .area-stars { color: var(--accent); letter-spacing: 2px; font-size: 15px; }
+  .area-stars i { font-style: normal; color: var(--line); }
+  .area-key { font-family: var(--serif); font-size: 19px; font-weight: 500; }
+  .area-bar { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+  .area-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), #b98cff); }
+  .area-card p { font-size: 14px; line-height: 1.75; color: var(--body); }
+  @media (max-width: 700px) { .area-grid { grid-template-columns: 1fr; } }
+  .rep-items { list-style: none; display: grid; grid-template-columns: minmax(110px, max-content) 1fr; column-gap: 28px; border-top: 1px solid var(--line); }
+  .rep-items li { display: grid; grid-template-columns: subgrid; grid-column: span 2; align-items: center; padding: 12px 6px; border-bottom: 1px solid var(--line); }
+  .rep-items.simple { grid-template-columns: 1fr; }
+  .rep-items.simple li { display: flex; gap: 12px; grid-column: auto; }
+  .rep-items.simple .mark { color: var(--accent); flex-shrink: 0; }
+  .rep-items.simple .mark.num { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 700;
+    color: #1a1020; background: linear-gradient(135deg, var(--accent), #b98cff); }
+  .rep-items.simple li:has(.num) { align-items: center; }
+  .practice { padding: 24px; display: flex; flex-direction: column; gap: 18px; border-color: var(--accent-line); margin-bottom: 8px; }
+  .practice-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+  .practice-head h3 { font-family: var(--serif); font-size: 20px; font-weight: 500; margin-top: 4px; }
+  .practice-total { font-size: 14px; color: var(--muted); white-space: nowrap; }
+  .practice-total b { font-family: var(--serif); font-size: 30px; color: var(--accent); }
+  .practice-total small { margin-left: 4px; }
+  .practice-group { display: flex; flex-direction: column; gap: 10px; }
+  .pg-head { display: flex; align-items: center; gap: 8px; }
+  .pg-pct { margin-left: auto; font-size: 13px; color: var(--accent); font-weight: 700; }
+  .pg-bar { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .pg-bar i { display: block; height: 100%; background: linear-gradient(90deg, #8f5bd6, var(--accent)); transition: width .3s; }
+  .practice .ck { padding: 11px 14px; }
+  .rep-items.checklist { border-top: 0; gap: 8px; }
+  .rep-items.checklist li { padding: 0; border-bottom: 0; }
+  .ck { display: flex; align-items: center; gap: 14px; cursor: pointer; width: 100%; padding: 14px 16px; border-radius: 12px;
+    background: var(--card-2); border: 1px solid var(--line); transition: .2s; }
+  .ck:hover { border-color: var(--accent-line); }
+  .ck input { position: absolute; opacity: 0; pointer-events: none; }
+  .ck .box { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center; transition: .2s;
+    border: 1.5px dashed var(--accent-line); color: var(--accent); font-size: 13px; }
+  .ck .box::after { content: "✦"; opacity: .45; }
+  .ck input:checked + .box { border: 0; background: linear-gradient(135deg, var(--accent), #b98cff); box-shadow: 0 0 14px rgba(255,112,207,.45); }
+  .ck input:checked + .box::after { content: "✓"; opacity: 1; color: #1a1020; font-size: 15px; font-weight: 800; }
+  .ck input:checked ~ p { color: var(--muted); }
+  .ck:has(input:checked) { background: rgba(255,112,207,.07); border-color: var(--accent-line); }
+  .ck input:focus-visible + .box { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .rep-item-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .rep-item-head b { font-size: 14px; }
+  .rep-item-head .tag { font-size: 11px; padding: 2px 8px; }
+  .rep-items p { font-size: 14px; color: var(--body); line-height: 1.7; }
+  @media (max-width: 600px) {
+    .rep-items { grid-template-columns: 1fr; }
+    .rep-items li { grid-template-columns: 1fr; grid-column: auto; gap: 6px; }
+  }
+  .premium-card { padding: 44px 48px; display: flex; flex-direction: column; gap: 32px; border-color: var(--accent-line);
+    background: linear-gradient(160deg, rgba(255,112,207,.07), rgba(143,91,214,.05) 40%, var(--card) 80%); }
+  .premium-head { display: flex; flex-direction: column; gap: 10px; }
+  .premium-head h2 { font-family: var(--serif); font-size: 26px; font-weight: 500; line-height: 1.35; }
+  .premium-toc { list-style: none; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .premium-toc li { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-radius: 10px; background: var(--card-2); font-size: 14px; }
+  .premium-toc span { color: var(--accent); font-weight: 700; font-size: 12px; }
+  .premium-toc em { margin-left: auto; font-style: normal; opacity: .6; font-size: 12px; }
+  .premium-blur { filter: blur(5px); opacity: .5; user-select: none; pointer-events: none; font-size: 14px; line-height: 1.9; color: var(--body); max-height: 90px; overflow: hidden; }
+  .premium-cta { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+  .paid-card.rec { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .compat-score { display: flex; align-items: center; gap: 20px; padding: 20px 24px; border-radius: var(--radius);
+    background: linear-gradient(120deg, rgba(255,112,207,.16), rgba(143,91,214,.12)); border: 1px solid var(--accent-line); }
+  .compat-score .big { font-family: var(--serif); font-size: 52px; color: var(--accent); line-height: 1; }
+  .compat-score .big small { font-size: 18px; margin-left: 2px; }
+  .compat-score b { font-size: 18px; font-weight: 500; }
+  .compat-score p { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .partner-pick { display: flex; flex-direction: column; gap: 8px; font-size: 13px; color: var(--muted); max-width: 360px; }
+  .buys-list { display: flex; flex-direction: column; gap: 10px; max-height: 60vh; overflow: auto; }
+  .buy-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 10px; background: var(--card-2); }
+  .buy-row .btn { white-space: nowrap; flex-shrink: 0; }
+  .buy-row .meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .concern-card { padding: 30px; display: flex; flex-direction: column; gap: 14px; border-color: var(--accent-line); }
+  .concern-card h3 { font-family: var(--serif); font-size: 22px; font-weight: 500; }
+  .concern-cta { margin-top: 6px; padding: 18px 20px; border-radius: 12px; background: var(--card-2); display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .concern-cta p { font-size: 14px; color: var(--body); flex: 1; min-width: 220px; line-height: 1.7; }
+  .core-more { display: flex; flex-direction: column; gap: 12px; }
+  .core-more h4 { font-size: 13px; color: var(--accent); font-weight: 500; }
+  .core-more p { font-size: 14px; line-height: 1.8; color: var(--body); }
+  .concern-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .concern-chips button { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--body); font: inherit; font-size: 13px; cursor: pointer; }
+  .concern-chips button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); background: rgba(255,112,207,.1); }
+  textarea.input { min-height: 90px; resize: vertical; padding-top: 12px; line-height: 1.6; }
+  @media (max-width: 700px) {
+    .premium-toc { grid-template-columns: 1fr; }
+    .premium-card { padding: 26px 20px; }
+    .premium-head h2 { font-size: 21px; }
+    .love-tabs { overflow-x: auto; }
+  }
+
+  .time-row { display: flex; gap: 8px; }
+  .time-row .segment { flex: 0 0 132px; }
+  .time-row .input { flex: 1; min-width: 0; }
+
+  /* ───────── 내 사주 목록 ───────── */
+  .list-head { display: flex; align-items: center; gap: 10px; }
+  .sub-tabs { display: flex; gap: 8px; border-bottom: 1px solid var(--line); }
+  .sub-tabs button {
+    display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 16px;
+    font-size: 14px; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .sub-tabs button[aria-selected="true"] { color: var(--accent); font-weight: 700; border-bottom-color: var(--accent); }
+  .view { display: none; }
+  .view.on { display: block; }
+
+  /* 성찰 일기 */
+  .journal { display: flex; flex-direction: column; gap: 18px; }
+  .journal-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .journal-stats { font-size: 13px; color: var(--muted); }
+  .journal-stats b { color: var(--accent); font-weight: 700; }
+  .journal-filter { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+  .journal-filter select { width: 200px; height: 40px; font-size: 13px; }
+  .j-month { font-size: 13px; color: var(--accent); font-weight: 700; margin-top: 6px; }
+  .j-card { padding: 24px 28px; display: flex; flex-direction: column; gap: 14px; }
+  .j-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .j-date { font-size: 13px; color: var(--muted); }
+  .j-type { font-size: 12px; color: var(--muted); padding: 3px 10px; border-radius: 100px; border: 1px solid var(--line); }
+  .j-q { font-family: var(--serif); font-size: 19px; line-height: 1.55; }
+  .j-a { font-size: 15px; color: var(--body); line-height: 1.85; white-space: pre-wrap; word-break: break-word;
+         padding-left: 16px; border-left: 2px solid var(--accent-line); }
+  .j-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .j-edited { font-size: 11px; color: var(--muted); }
+  .j-actions { display: flex; gap: 18px; }
+  .j-actions button { font-size: 13px; color: var(--muted); }
+  .j-actions button:hover { color: var(--text); }
+  .j-actions .del:hover { color: var(--danger); }
+  .j-confirm { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--danger); flex-wrap: wrap; }
+  .list-head h2 { font-size: 18px; font-weight: 500; }
+  .count { min-width: 25px; height: 18px; padding: 0 8px; border-radius: 100px; background: var(--accent-soft); color: var(--accent); font-size: 11px; display: grid; place-items: center; }
+  .list-wrap { display: grid; grid-template-columns: 1fr 388px; gap: 24px; align-items: start; }
+  .profiles { display: flex; flex-direction: column; gap: 18px; }
+  .profile-card { padding: 32px; display: flex; flex-direction: column; gap: 28px; }
+  .profile-card.current { border-color: var(--accent-line); }
+  .pc-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .pc-name { display: flex; align-items: center; gap: 16px; }
+  .pc-name b { font-family: var(--serif); font-size: 28px; font-weight: 500; }
+  .pc-manage { display: flex; gap: 20px; }
+  .pc-manage button { font-size: 13px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+  .pc-manage button:hover { color: var(--text); }
+  .pc-manage .del:hover { color: var(--danger); }
+  .pc-info { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+  .pc-info .k { font-size: 11px; color: var(--muted); }
+  .pc-info .v { font-size: 14px; margin-top: 4px; }
+  .pc-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 24px; border-top: 1px solid var(--line); gap: 12px; }
+  .pc-status { font-size: 13px; color: var(--accent); }
+  .pc-status small { display: block; color: var(--muted); font-size: 12px; }
+  .side-guide { padding: 0; overflow: hidden; }
+  .side-guide .visual { height: 126px; display: grid; place-items: center; font-size: 46px; background: radial-gradient(circle at 50% 60%, rgba(255,112,207,.25), transparent 60%), var(--card-2); }
+  .side-guide .txt { padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+  .side-guide h3 { font-size: 18px; font-weight: 500; }
+  .side-guide p { font-size: 13px; color: var(--muted); }
+
+  /* ───────── 모달 (삭제 확인) ───────── */
+  .modal-bg { position: fixed; inset: 0; z-index: 50; background: rgba(8, 6, 14, .72); display: none; place-items: center; padding: 16px; }
+  .modal-bg.open { display: grid; }
+  .modal { width: 560px; max-width: 100%; padding: 32px; display: flex; flex-direction: column; gap: 24px; }
+  .modal-icon { width: 48px; height: 48px; border-radius: 12px; background: rgba(255,138,138,.12); color: var(--danger); display: grid; place-items: center; font-size: 22px; }
+  .modal h3 { font-family: var(--serif); font-size: 26px; font-weight: 500; }
+  .modal p { font-size: 14px; color: var(--muted); }
+  .modal-target { padding: 20px; border-radius: 10px; background: var(--card-2); display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+  .modal-target .muted { color: var(--muted); font-size: 13px; }
+  .modal-warn { font-size: 13px; color: var(--danger); }
+  .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .btn-danger { background: var(--danger); border-color: var(--danger); color: var(--on-accent); }
+
+  /* ───────── 이용 안내 모달 ───────── */
+  .f-link { font-size: 12px; color: var(--muted); }
+  .f-link:hover { color: var(--accent); text-decoration: underline; }
+  .guide { width: min(760px, calc(100vw - 32px)); min-width: 0; height: min(86vh, 760px); padding: 0; display: flex; flex-direction: column; overflow: hidden; }
+  .guide-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 24px 28px 0; }
+  .guide-head h3 { font-family: var(--serif); font-size: 24px; font-weight: 500; }
+  .guide-close { width: 36px; height: 36px; border-radius: 50%; font-size: 18px; color: var(--muted); }
+  .guide-close:hover { background: var(--card-2); color: var(--text); }
+  .guide-tabs { display: flex; gap: 24px; padding: 0 28px; border-bottom: 1px solid var(--line); margin-top: 16px; overflow-x: auto; scrollbar-width: none; }
+  .guide-tabs button { height: 44px; font-size: 13px; color: var(--muted); border-bottom: 2px solid transparent; white-space: nowrap; }
+  .guide-tabs button[aria-selected="true"] { color: var(--accent); font-weight: 700; border-bottom-color: var(--accent); }
+  .guide-body { padding: 24px 28px 28px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+  .guide-sec { display: none; flex-direction: column; gap: 18px; }
+  .guide-sec.on { display: flex; }
+  .guide-sec h4 { font-size: 15px; font-weight: 700; color: var(--text); }
+  .guide-sec p, .guide-sec li { font-size: 14px; color: var(--body); line-height: 1.75; }
+  .guide-sec ul, .guide-sec ol { padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+  .guide-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .guide-steps div { padding: 16px; border-radius: 10px; background: var(--card-2); border: 1px solid var(--line); }
+  .guide-steps b { display: block; color: var(--accent); font-size: 12px; margin-bottom: 6px; }
+  .guide-steps span { font-size: 13px; color: var(--body); }
+  .guide-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .guide-table th, .guide-table td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .guide-table th { color: var(--accent); font-weight: 500; white-space: nowrap; width: 110px; }
+  .guide-table td { color: var(--body); }
+  .guide-els { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; text-align: center; }
+  .guide-els div { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .guide-els img { width: 48px; height: 48px; border-radius: 50%; }
+  .guide-els b { font-size: 13px; color: var(--text); font-weight: 500; }
+  .faq { border: 1px solid var(--line); border-radius: 10px; padding: 0 16px; }
+  .faq summary { cursor: pointer; padding: 14px 0; font-size: 14px; font-weight: 500; list-style: none; display: flex; justify-content: space-between; }
+  .faq summary::after { content: "+"; color: var(--accent); }
+  .faq[open] summary::after { content: "−"; }
+  .faq p { padding-bottom: 14px; }
+  @media (max-width: 720px) {
+    .guide-steps { grid-template-columns: 1fr; }
+    .guide-els { gap: 4px; }
+    .guide-els img { width: 40px; height: 40px; }
+    .guide-table th { width: 84px; padding-left: 0; }
+    .guide-table td { padding-right: 0; }
+    .guide-head, .guide-body { padding-left: 20px; padding-right: 20px; }
+    .guide-tabs { padding: 0 20px; }
+  }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 32px; transform: translate(-50%, 20px);
+    padding: 12px 20px; border-radius: 999px; background: var(--text); color: var(--on-accent);
+    font-size: 14px; font-weight: 500; opacity: 0; pointer-events: none; transition: all .25s; z-index: 60;
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  .loading { opacity: .5; pointer-events: none; }
+
+  /* ───────── 푸터 ───────── */
+  footer {
+    display: flex; justify-content: space-between; align-items: center; gap: 16px;
+    padding: 28px var(--pad-x); border-top: 1px solid var(--line);
+  }
+  footer .f-brand { font-family: var(--serif); font-weight: 600; font-size: 18px; }
+  footer p { font-size: 12px; color: var(--muted); }
+
+  /* ───────── 반응형 ───────── */
+  @media (max-width: 1100px) {
+    :root { --pad-x: 32px; }
+    .tabs { gap: 16px; }
+    .tab { font-size: 13px; }
+    .brand-desc { display: none; }
+    .nav-help .help-text { display: none; }
+    .grid-2, .form-wrap, .reading, .list-wrap { grid-template-columns: 1fr; }
+    .hero-orbit { opacity: .35; right: -60px; }
+  }
+  @media (max-width: 720px) {
+    :root { --pad-x: 16px; }
+    .nav { height: auto; flex-direction: column; align-items: stretch; padding-top: 14px; }
+    .nav-help { position: absolute; right: 12px; top: 24px; padding: 6px; }
+    .nav-help svg { width: 20px; height: 20px; }
+    .tabs { height: 52px; overflow-x: auto; gap: 20px; scrollbar-width: none; }
+    .tab { height: 52px; }
+    .brand-desc { display: block; font-size: 11px; padding-left: 10px; }
+    .title { font-size: 28px; }
+    .hero { padding: 36px 24px; min-height: 440px; }
+    .hero h1 { font-size: 34px; }
+    .hero-orbit { display: none; }
+    .brand-logo { height: 50px; }
+    .manifesto { flex-wrap: wrap; gap: 8px; font-size: 13px; }
+    .manifesto .star { display: none; }
+    .grid-3, .grid-half, .row, .row-cal, .summary-cards { grid-template-columns: 1fr; }
+    .pc-info { grid-template-columns: 1fr 1fr; }
+    .j-card { padding: 20px; }
+    .journal-filter select { width: auto; flex: 1; min-width: 0; }
+    .journal-filter { width: 100%; }
+    .sub-tabs button { padding: 0 10px; }
+    .pc-head, .pc-foot, .invite, footer { flex-direction: column; align-items: flex-start; }
+    .core-headline { font-size: 24px; }
+    .pillar-char { font-size: 22px; height: 56px; }
+    .core, .reading-main, .form, .profile-card { padding: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═════════════ 상단 내비게이션 = 탭 ═════════════ -->
+<header class="nav">
+  <div class="brand" data-go="home">
+    <img class="brand-logo" src="img/logo.png" alt="Among the Stars">
+    <span class="brand-desc">수많은 별 속에서<br>나를 발견하는 시간</span>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="home" aria-selected="true">홈</button>
+    <button class="tab" role="tab" data-tab="input" aria-selected="false">사주 입력</button>
+    <button class="tab" role="tab" data-tab="result" aria-selected="false">내 결과</button>
+    <button class="tab" role="tab" data-tab="year" aria-selected="false"><span class="this-year">올해</span>&nbsp;운세</button>
+    <button class="tab" role="tab" data-tab="career" aria-selected="false">직장운</button>
+    <button class="tab" role="tab" data-tab="marriage" aria-selected="false">사랑운</button>
+    <button class="tab" role="tab" data-tab="family" aria-selected="false">가족운</button>
+    <button class="tab" role="tab" data-tab="list" aria-selected="false">내 사주 목록</button>
+  </nav>
+  <button type="button" class="nav-help" data-help="guide">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01"/></svg>
+    <span class="help-text">이용 안내</span>
+  </button>
+</header>
+
+<main>
+
+<!-- ═════════════ 탭 1. 홈 ═════════════ -->
+<section class="panel active" id="panel-home" role="tabpanel">
+  <div class="hero">
+    <div class="stars" id="stars"></div>
+    <div class="hero-orbit" aria-hidden="true"></div>
+    <div class="hero-content">
+      <span class="eyebrow">COSMIC COLLECTION · 사주 리딩</span>
+      <h1>수많은 별 속에서<br><em>나를 발견하는 시간</em></h1>
+      <p>생년월일과 태어난 시간으로 사주팔자를 계산하고, 다섯 가지 오행 친구들과 함께 나의 성향과 올해의 흐름을 읽어보세요.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary btn-lg" data-go="input">무료로 사주 보기 ↗</button>
+        <button class="btn btn-ghost btn-lg" data-go="list">내 사주 목록 ↗</button>
+      </div>
+      <span class="notice">회원가입 없이 바로 시작할 수 있어요 · 입력한 정보는 이 브라우저에서만 보여요</span>
+    </div>
+  </div>
+
+  <div class="manifesto">
+    <span>운명을 맞히기보다</span><span class="star">✦</span>
+    <span>나를 이해하는 시간으로</span><span class="star">✦</span>
+    <span>오늘을 살아갈 힌트를</span>
+  </div>
+
+  <div class="intro" style="margin-top:24px">
+    <span class="eyebrow">발견한 나의 별</span>
+    <h2 class="section-title">Among the Stars에서 읽을 수 있는 것</h2>
+  </div>
+  <div class="grid-3">
+    <article class="card feature" data-go="result">
+      <span class="feature-icon">🌙</span>
+      <span class="feature-topic">나 자신</span>
+      <h3>나의 핵심 성향</h3>
+      <p>나를 나타내는 글자, 일간으로 읽는 타고난 성향과 키워드</p>
+      <span class="q">“나는 어떤 속도로 자라는 사람일까?”</span>
+    </article>
+    <article class="card feature" data-go="result">
+      <span class="feature-icon" style="display:flex;gap:6px"><img src="img/wood.svg" alt="" width="34" height="34" style="border-radius:50%"><img src="img/fire.svg" alt="" width="34" height="34" style="border-radius:50%"><img src="img/earth.svg" alt="" width="34" height="34" style="border-radius:50%"><img src="img/metal.svg" alt="" width="34" height="34" style="border-radius:50%"><img src="img/water.svg" alt="" width="34" height="34" style="border-radius:50%"></span>
+      <span class="feature-topic">오행 균형</span>
+      <h3>다섯 친구의 균형</h3>
+      <p>목·화·토·금·수 다섯 기운의 비율과, 부족한 기운을 채우는 습관</p>
+      <span class="q">“나에게 필요한 기운은 무엇일까?”</span>
+    </article>
+    <article class="card feature" data-go="year">
+      <span class="feature-icon">✨</span>
+      <span class="feature-topic">올해 운세</span>
+      <h3><span class="this-year">올해</span> 전반적인 운세</h3>
+      <p>올해의 기운과 나의 관계로 읽는 흐름, 주의 포인트와 실천 문구</p>
+      <span class="q">“올해 나는 무엇에 집중하면 좋을까?”</span>
+    </article>
+  </div>
+
+  <div class="intro" style="margin-top:24px">
+    <span class="eyebrow">이용 순서</span>
+    <h2 class="section-title">세 단계면 충분해요</h2>
+  </div>
+  <div class="grid-3">
+    <div class="step"><span class="step-num">01</span><h4>출생 정보 입력</h4><p>이름, 생년월일, 태어난 시간과 성별을 입력해요. 시간을 몰라도 괜찮아요.</p></div>
+    <div class="step"><span class="step-num">02</span><h4>사주팔자 계산</h4><p>절기 기준으로 년·월·일·시 네 기둥, 여덟 글자를 계산해요.</p></div>
+    <div class="step"><span class="step-num">03</span><h4>나의 결 읽기</h4><p>핵심 성향, 오행 균형, 올해 운세를 확인하고 목록에 저장해요.</p></div>
+  </div>
+
+  <div class="card invite" style="margin-top:12px">
+    <div class="pc-name">
+      <span class="avatar lg" style="border-color:var(--accent)">🐰</span>
+      <div><h3>작은 별지기 달토끼가 기다리고 있어요</h3><p class="notice">지금 바로 나의 별을 읽어보세요</p></div>
+    </div>
+    <button class="btn btn-primary btn-lg" data-go="input">나의 사주 시작하기 ↗</button>
+  </div>
+</section>
+
+<!-- ═════════════ 탭 2. 사주 입력 ═════════════ -->
+<section class="panel" id="panel-input" role="tabpanel">
+  <div class="intro">
+    <span class="eyebrow" id="form-eyebrow">사주 프로필 추가</span>
+    <h1 class="title" id="form-title">태어난 순간을 알려주세요</h1>
+    <p class="lead">입력한 출생 정보로 사주팔자를 계산해요. 정확한 시간을 알수록 결과가 섬세해져요.</p>
+  </div>
+
+  <div class="form-wrap">
+    <form class="card form" id="profile-form" novalidate>
+      <div class="form-head">
+        <h2>출생 정보</h2>
+        <span class="req-note"><span class="req">*</span> 필수 입력</span>
+      </div>
+
+      <div class="field">
+        <label for="f-name">이름 또는 별명 <span class="req">*</span></label>
+        <input class="input" id="f-name" maxlength="20" placeholder="예) 김서연" autocomplete="off">
+        <span class="help">결과 화면과 목록에 표시되는 이름이에요.</span>
+      </div>
+
+      <div class="row-cal">
+        <div class="field">
+          <span class="label">달력 구분</span>
+          <div class="segment" id="f-cal">
+            <button type="button" data-value="SOLAR" aria-pressed="true">양력</button>
+            <button type="button" data-value="LUNAR" aria-pressed="false">음력</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="f-date">생년월일 <span class="req">*</span></label>
+          <input class="input" type="text" id="f-date" inputmode="numeric" maxlength="10" placeholder="예) 1994.08.17" autocomplete="off">
+          <label class="check" id="f-leap-wrap" hidden><input type="checkbox" id="f-leap"> 윤달이에요</label>
+          <span class="help" id="f-date-help">숫자 8자리만 입력해도 돼요 (19940817)</span>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="f-time">태어난 시간</label>
+          <div class="time-row">
+            <div class="segment" id="f-ampm">
+              <button type="button" data-value="AM" aria-pressed="true">오전</button>
+              <button type="button" data-value="PM" aria-pressed="false">오후</button>
+            </div>
+            <input class="input" type="text" id="f-time" inputmode="numeric" maxlength="5" placeholder="예) 02:30" autocomplete="off">
+          </div>
+          <span class="help">숫자 4자리로 입력해요 (2시 30분 → 0230, 12시 → 1200)</span>
+          <label class="check"><input type="checkbox" id="f-time-unknown"> 태어난 시간을 몰라요</label>
+        </div>
+        <div class="field">
+          <label for="f-place">출생 지역</label>
+          <select class="input" id="f-place">
+            <option value="">선택 안 함</option>
+            <option>서울특별시</option><option>부산광역시</option><option>대구광역시</option>
+            <option>인천광역시</option><option>광주광역시</option><option>대전광역시</option>
+            <option>울산광역시</option><option>세종특별자치시</option><option>경기도</option>
+            <option>강원특별자치도</option><option>충청북도</option><option>충청남도</option>
+            <option>전북특별자치도</option><option>전라남도</option><option>경상북도</option>
+            <option>경상남도</option><option>제주특별자치도</option><option>해외</option>
+          </select>
+          <span class="help">시간은 한국 표준시 기준 30분 보정을 적용해요.</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="label">성별 <span class="req">*</span></span>
+        <div class="segment" id="f-gender">
+          <button type="button" data-value="F" aria-pressed="false">여성</button>
+          <button type="button" data-value="M" aria-pressed="false">남성</button>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="field">
+        <span class="label">요즘 가장 큰 고민 <span class="help" style="display:inline">(선택)</span></span>
+        <div class="concern-chips" id="f-concern">
+          <button type="button" data-value="LOVE" aria-pressed="false">💞 연애 · 결혼</button>
+          <button type="button" data-value="CAREER" aria-pressed="false">🧭 일 · 진로</button>
+          <button type="button" data-value="MONEY" aria-pressed="false">💰 돈 · 재물</button>
+          <button type="button" data-value="RELATION" aria-pressed="false">🤝 인간관계</button>
+          <button type="button" data-value="SELF" aria-pressed="false">🌙 나 자신 · 마음</button>
+          <button type="button" data-value="FUTURE" aria-pressed="false">✨ 올해 · 앞날</button>
+        </div>
+        <textarea class="input" id="f-concern-text" maxlength="200" placeholder="고민을 조금 더 적어주면, 결과 화면에서 그 고민에 맞춰 풀이해드려요. (200자 이내)"></textarea>
+        <span class="help"><span id="f-concern-count">0</span> / 200 · 적은 내용은 내 사주 풀이에만 쓰여요.</span>
+      </div>
+
+      <hr class="divider">
+
+      <div class="field">
+        <label class="check"><input type="checkbox" id="f-agree"> 출생 정보 수집 및 이용에 동의합니다 <span class="req">*</span></label>
+        <span class="help">입력한 정보는 사주 계산에만 사용되며, 목록에서 언제든 삭제할 수 있어요.</span>
+      </div>
+
+      <p class="form-error" id="form-error" role="alert"></p>
+
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary" id="submit-btn">사주 결과 보기 ↗</button>
+        <button type="button" class="btn btn-line" id="cancel-btn">취소</button>
+      </div>
+    </form>
+
+    <aside class="card help-panel">
+      <div class="help-visual" aria-hidden="true" style="letter-spacing:0;display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:12px;padding:0 12px"><img src="img/wood.svg" alt="" width="64" height="64" style="border-radius:50%"><img src="img/fire.svg" alt="" width="64" height="64" style="border-radius:50%"><img src="img/earth.svg" alt="" width="64" height="64" style="border-radius:50%"><img src="img/metal.svg" alt="" width="64" height="64" style="border-radius:50%"><img src="img/water.svg" alt="" width="64" height="64" style="border-radius:50%"></div>
+      <span class="tag" style="align-self:flex-start">사주란?</span>
+      <h3>태어난 년·월·일·시,<br>네 개의 기둥과 여덟 글자</h3>
+      <p>각 기둥은 하늘의 기운(천간)과 땅의 기운(지지) 두 글자로 이루어져요. 여덟 글자가 가진 목·화·토·금·수의 비율로 나의 결을 읽어요.</p>
+      <hr class="divider">
+      <div class="four-pillars">
+        <div><b>시주</b><span>태어난 시</span></div>
+        <div><b>일주</b><span>태어난 날 · 나</span></div>
+        <div><b>월주</b><span>태어난 달</span></div>
+        <div><b>년주</b><span>태어난 해</span></div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ═════════════ 탭 3. 내 결과 ═════════════ -->
+<section class="panel" id="panel-result" role="tabpanel">
+  <div id="result-root"></div>
+</section>
+
+<!-- ═════════════ 탭 4. 올해 운세 ═════════════ -->
+<section class="panel" id="panel-year" role="tabpanel">
+  <div id="year-root"></div>
+</section>
+
+<!-- ═════════════ 탭 5. 직장운 ═════════════ -->
+<section class="panel" id="panel-career" role="tabpanel">
+  <div id="career-root"></div>
+</section>
+
+<!-- ═════════════ 탭 6. 사랑운 (결혼운 · 궁합 · 재회운) ═════════════ -->
+<section class="panel" id="panel-marriage" role="tabpanel">
+  <div id="marriage-root"></div>
+</section>
+
+<!-- ═════════════ 탭 7. 가족운 ═════════════ -->
+<section class="panel" id="panel-family" role="tabpanel">
+  <div id="family-root"></div>
+</section>
+
+<!-- ═════════════ 탭 5. 내 사주 목록 ═════════════ -->
+<section class="panel" id="panel-list" role="tabpanel">
+  <div class="intro" style="flex-direction:row; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap">
+    <div class="intro">
+      <span class="eyebrow">내 사주</span>
+      <h1 class="title" id="list-title">저장한 사주 프로필</h1>
+      <p class="lead" id="list-lead">나와 소중한 사람들의 사주를 저장하고, 언제든 다시 열어볼 수 있어요.</p>
+    </div>
+    <button class="btn btn-primary" data-go="input" data-new>+ 사주 추가</button>
+  </div>
+
+  <div class="sub-tabs" role="tablist">
+    <button type="button" data-view="profiles" aria-selected="true">저장된 프로필 <span class="count" id="profile-count">0</span></button>
+    <button type="button" data-view="journal" aria-selected="false">성찰 일기 <span class="count" id="journal-count">0</span></button>
+  </div>
+
+  <div class="view on" id="view-profiles">
+  <div class="list-wrap">
+    <div class="profiles" id="profile-list"></div>
+    <aside class="card side-guide">
+      <div class="visual">🐰✨</div>
+      <div class="txt">
+        <h3>프로필 관리 안내</h3>
+        <p>정보를 수정하면 사주가 새로 계산되고, 풀이도 바뀐 정보 기준으로 다시 보여드려요.</p>
+        <hr class="divider">
+        <p>삭제한 프로필은 복구할 수 없어요. 프로필은 지금 사용 중인 브라우저에만 연결돼요.</p>
+      </div>
+    </aside>
+  </div>
+  </div>
+
+  <div class="view" id="view-journal">
+  <div class="list-wrap">
+    <div class="journal">
+      <div id="practice-box"></div>
+      <div class="journal-bar">
+        <span class="journal-stats" id="journal-stats"></span>
+        <label class="journal-filter">프로필
+          <select class="input" id="journal-filter"><option value="">전체</option></select>
+        </label>
+      </div>
+      <div class="journal" id="journal-list"></div>
+    </div>
+    <aside class="card side-guide">
+      <div class="visual" style="gap:6px;display:flex;justify-content:center;align-items:center">
+        <img src="img/wood.svg" alt="" width="34" height="34"><img src="img/fire.svg" alt="" width="34" height="34"><img src="img/earth.svg" alt="" width="34" height="34"><img src="img/metal.svg" alt="" width="34" height="34"><img src="img/water.svg" alt="" width="34" height="34">
+      </div>
+      <div class="txt">
+        <h3>성찰 일기란?</h3>
+        <p>내 결과 · 올해 운세 · 직장운 · 결혼운 탭의 성찰 질문에 적은 답이 날짜별로 모여요. 질문은 매일 바뀌고, "다른 질문"을 눌러 고를 수도 있어요.</p>
+        <hr class="divider">
+        <p>적은 내용은 언제든 수정하거나 삭제할 수 있어요. 사주 프로필을 삭제하면 그 프로필로 쓴 성찰 일기도 함께 삭제돼요.</p>
+      </div>
+    </aside>
+  </div>
+  </div>
+
+</section>
+
+</main>
+
+<footer>
+  <div>
+    <div class="f-brand">Among the Stars</div>
+    <p>수많은 별 속에서 나를 발견하는 시간</p>
+    <p>사주 풀이는 오락과 자기 성찰을 위한 참고이며, 미래나 특정 결과를 보장하지 않습니다.</p>
+  </div>
+  <p class="f-links"><button class="f-link" data-help="privacy">개인정보 처리방침</button> · <button class="f-link" data-help="terms">이용약관</button> · <button class="f-link" data-help="guide">이용 안내</button> · <button class="f-link" data-buys>구매 내역</button> © 2026 Among the Stars</p>
+</footer>
+
+<!-- 삭제 확인 모달 -->
+<div class="modal-bg" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="card modal">
+    <div class="modal-icon">🗑</div>
+    <div>
+      <h3 id="modal-title">사주 프로필을 삭제할까요?</h3>
+      <p>삭제하면 이 프로필의 출생 정보, 사주 결과, 성찰 일기, 구매 내역이 함께 사라져요.</p>
+    </div>
+    <div class="modal-target" id="modal-target"></div>
+    <p class="modal-warn">⚠ 삭제한 프로필은 복구할 수 없어요.</p>
+    <div class="modal-actions">
+      <button class="btn btn-line" id="modal-cancel">취소</button>
+      <button class="btn btn-danger" id="modal-confirm">삭제하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 이용 안내 모달 -->
+<div class="modal-bg" id="guide" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+  <div class="card guide">
+    <div class="guide-head">
+      <h3 id="guide-title">이용 안내</h3>
+      <button class="guide-close" id="guide-close" aria-label="닫기">✕</button>
+    </div>
+    <div class="guide-tabs" role="tablist">
+      <button data-gtab="guide" aria-selected="true">이용 방법</button>
+      <button data-gtab="calc" aria-selected="false">사주 계산 방식</button>
+      <button data-gtab="faq" aria-selected="false">자주 묻는 질문</button>
+      <button data-gtab="privacy" aria-selected="false">개인정보 처리방침</button>
+      <button data-gtab="terms" aria-selected="false">이용약관</button>
+    </div>
+    <div class="guide-body">
+
+      <section class="guide-sec on" data-gsec="guide">
+        <p>Among the Stars는 태어난 순간의 사주팔자를 계산해, 나의 성향과 올해의 흐름을 읽어보는 서비스예요. 회원가입 없이 바로 이용할 수 있어요.</p>
+        <div class="guide-steps">
+          <div><b>STEP 01</b><span><b style="display:inline;color:var(--text)">사주 입력</b> 탭에서 이름, 생년월일, 태어난 시간, 성별을 입력해요.</span></div>
+          <div><b>STEP 02</b><span><b style="display:inline;color:var(--text)">내 결과</b> 탭에서 사주팔자, 오행 균형, 핵심 성향을 확인해요.</span></div>
+          <div><b>STEP 03</b><span><b style="display:inline;color:var(--text)">올해 운세</b> 탭에서 올해의 흐름과 실천 문구를 읽어요.</span></div>
+        </div>
+        <h4>탭별 기능</h4>
+        <table class="guide-table">
+          <tr><th>홈</th><td>서비스 소개와 이용 순서</td></tr>
+          <tr><th>사주 입력</th><td>새 사주 추가 · 기존 사주 정보 수정</td></tr>
+          <tr><th>무료 · 유료</th><td><b>무료</b>: 모든 탭의 기본 풀이(내 결과 · 올해 운세 · 직장운 · 사랑운 · 가족운) / <b>유료</b>: 각 탭 아래의 심화 리포트 6종 (사주마다 따로 구매)</td></tr>
+          <tr><th>내 결과</th><td>여덟 글자, 오행 비율, 핵심 성향, 강한 기운과 채우면 좋은 기운, 성찰 질문</td></tr>
+          <tr><th>올해 운세</th><td>올해 간지와 나의 관계로 읽는 흐름, 주의 포인트, 풀이 근거</td></tr>
+          <tr><th>직장운</th><td>십성 분포로 읽는 일하는 스타일, 잘 맞는 분야, 올해 일의 흐름</td></tr>
+          <tr><th>결혼운</th><td>배우자 별과 배우자 자리(일지)로 읽는 인연의 흐름과 관계 스타일</td></tr>
+          <tr><th>내 사주 목록</th><td>저장한 사주 보기 · 수정 · 삭제. 여러 사람의 사주를 저장할 수 있어요</td></tr>
+          <tr><th>성찰 일기</th><td>내 결과 · 올해 운세 · 직장운 · 결혼운 탭의 성찰 질문에 적은 답이 날짜별로 모여요. 내 사주 목록 › 성찰 일기에서 수정 · 삭제할 수 있어요</td></tr>
+        </table>
+        <h4>다섯 오행 친구</h4>
+        <div class="guide-els"><div><img src="img/wood.svg" alt=""><b>목 木</b>사슴<br>성장</div><div><img src="img/fire.svg" alt=""><b>화 火</b>여우<br>열정</div><div><img src="img/earth.svg" alt=""><b>토 土</b>곰<br>안정</div><div><img src="img/metal.svg" alt=""><b>금 金</b>호랑이<br>집중</div><div><img src="img/water.svg" alt=""><b>수 水</b>수달<br>흐름</div></div>
+      </section>
+
+      <section class="guide-sec" data-gsec="calc">
+        <p>사주는 태어난 <b>년 · 월 · 일 · 시</b> 네 기둥과, 기둥마다 하늘의 기운(천간)과 땅의 기운(지지) 두 글자씩, 모두 여덟 글자로 이루어져요.</p>
+        <table class="guide-table">
+          <tr><th>년주</th><td>1월 1일이 아니라 <b>입춘(2월 4일경)</b>에 해가 바뀌어요. 1월~2월 초 출생은 전년도 년주로 계산해요.</td></tr>
+          <tr><th>월주</th><td>음력 1일이 아니라 <b>12절기</b>(입춘, 경칩, 청명 …)를 기준으로 달이 바뀌어요.</td></tr>
+          <tr><th>일주</th><td>60갑자가 하루씩 순서대로 돌아가는 원리로 계산해요.</td></tr>
+          <tr><th>시주</th><td>2시간 단위예요. 한국 표준시와 실제 태양 시간의 차이(약 30분)를 보정해 <b>23:30~01:29를 자시</b>로 봐요. 23:30 이후 출생은 다음 날 일주로 계산해요.</td></tr>
+          <tr><th>오행 비율</th><td>여덟 글자의 오행을 세되, 태어난 계절을 나타내는 <b>월지에 3배</b>의 비중을 둬요.</td></tr>
+          <tr><th>올해 운세</th><td>올해 천간의 오행이 나의 일간과 어떤 관계(비겁 · 식상 · 재성 · 관성 · 인성)인지로 풀이해요.</td></tr>
+          <tr><th>직장운</th><td>일간을 뺀 글자들이 나와 맺는 관계(십성)를 세고, 가장 많은 십성으로 일하는 스타일을 읽어요. 월지는 2배로 반영해요.</td></tr>
+          <tr><th>결혼운</th><td>배우자 별(여성은 관성, 남성은 재성)이 얼마나 있는지와, 배우자 자리인 일지가 나와 어떤 관계인지로 풀이해요.</td></tr>
+        </table>
+        <p class="notice">절기 날짜는 평균값을 사용해서, 절기 당일 전후에 태어난 경우 하루 정도 차이가 날 수 있어요. 음력은 한국 표준시 기준 천문 계산으로 만든 표(1900 ~ 2050년)로 양력으로 바꿔요.</p>
+      </section>
+
+      <section class="guide-sec" data-gsec="faq">
+        <details class="faq"><summary>태어난 시간을 몰라도 되나요?</summary><p>네. "태어난 시간을 몰라요"를 선택하면 시주를 뺀 여섯 글자로 계산해요. 오행 비율과 풀이도 여섯 글자 기준으로 보여드려요.</p></details>
+        <details class="faq"><summary>다른 사주 사이트와 결과가 달라요.</summary><p>자시를 보는 기준(23시 / 23시 30분)이나 시간 보정 여부, 오행 비율을 계산하는 방식이 사이트마다 달라서 생기는 차이예요. Among the Stars의 기준은 "사주 계산 방식" 탭에서 확인할 수 있어요.</p></details>
+        <details class="faq"><summary>저장한 사주가 사라졌어요.</summary><p>사주 목록은 로그인 대신 지금 쓰는 브라우저에 연결돼요. 다른 기기나 브라우저, 시크릿 창에서는 보이지 않고, 브라우저 데이터를 지우면 목록에 연결이 끊길 수 있어요.</p></details>
+        <details class="faq"><summary>정보를 수정하면 어떻게 되나요?</summary><p>바뀐 출생 정보로 사주를 바로 다시 계산하고, 풀이도 새 결과 기준으로 보여드려요.</p></details>
+        <details class="faq"><summary>결제하면 실제로 돈이 나가나요?</summary><p>아니요. 포트폴리오용 서비스라 <b>토스페이먼츠 테스트 결제</b>(또는 모의 결제)로 동작해서 실제로 돈이 나가지 않아요. 구매 내역은 화면 맨 아래 "구매 내역"에서 볼 수 있어요.</p></details>
+        <details class="faq"><summary>음력 생일도 되나요?</summary><p>네. 사주 입력에서 음력을 고르고 음력 날짜를 입력하면 양력으로 바꿔서 계산해요. 윤달이면 "윤달이에요"에 체크해주세요. (1900 ~ 2050년)</p></details>
+        <details class="faq"><summary>성찰 질문은 매일 바뀌나요?</summary><p>네. 날짜마다 다른 질문이 나오고, "다른 질문"을 누르면 바로 다음 질문으로 바꿀 수 있어요. 내 일간의 오행, 올해의 흐름, 일과 관계에 맞춘 질문 600여 개 중에서 골라드려요.</p></details>
+        <details class="faq"><summary>오행 비율이 낮으면 안 좋은 건가요?</summary><p>아니에요. 높고 낮음은 좋고 나쁨이 아니라 나의 기질이 어떤 방향으로 기울어 있는지를 보여줄 뿐이에요.</p></details>
+      </section>
+
+      <section class="guide-sec" data-gsec="privacy">
+        <h4>수집하는 정보</h4>
+        <p>이름(또는 별명), 생년월일, 태어난 시간, 출생 지역, 성별, 성찰 질문에 직접 적은 답</p>
+        <h4>이용 목적</h4>
+        <p>사주 계산과 결과 화면 표시에만 사용하며, 다른 목적으로 이용하거나 외부에 제공하지 않아요.</p>
+        <h4>보관 및 삭제</h4>
+        <ul>
+          <li>입력한 정보는 서비스 데이터베이스에 저장되고, 이 브라우저에 발급된 고유 ID로만 조회할 수 있어요.</li>
+          <li>내 사주 목록에서 "프로필 삭제"를 누르면 즉시 삭제되며 복구할 수 없어요.</li>
+        </ul>
+        <p class="notice">이 서비스는 교육용 포트폴리오 프로젝트이며, 실제 이름 대신 별명을 입력해도 이용에 문제가 없어요.</p>
+      </section>
+
+      <section class="guide-sec" data-gsec="terms">
+        <ol>
+          <li>Among the Stars의 사주 풀이는 오락과 자기 성찰을 위한 참고 자료이며, 미래나 특정 결과를 예측하거나 보장하지 않아요.</li>
+          <li>건강, 재정, 법률 등 중요한 결정은 풀이가 아닌 전문가의 조언과 본인의 판단으로 내려주세요.</li>
+          <li>다른 사람의 출생 정보는 본인의 동의를 받은 경우에만 입력해주세요.</li>
+          <li>서비스 내용은 개선을 위해 예고 없이 바뀔 수 있어요.</li>
+        </ol>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- 결제 모달 (모의 결제) -->
+<div class="modal-bg" id="pay" role="dialog" aria-modal="true" aria-labelledby="pay-title">
+  <div class="card pay">
+    <div class="card-head">
+      <h3 id="pay-title">리포트 구매</h3>
+      <button class="guide-close" id="pay-close" aria-label="닫기">✕</button>
+    </div>
+    <div id="pay-body"></div>
+    <label class="check"><input type="checkbox" id="pay-agree"> 구매 내용을 확인했어요 <span class="req">*</span></label>
+    <p class="pay-note" id="pay-note"></p>
+    <p class="pay-error" id="pay-error" role="alert"></p>
+    <div class="modal-actions">
+      <button class="btn btn-line" id="pay-cancel">취소</button>
+      <button class="btn btn-primary" id="pay-confirm">결제하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 구매 내역 (하단 링크로만 열림) -->
+<div class="modal-bg" id="buys" role="dialog" aria-modal="true" aria-labelledby="buys-title">
+  <div class="card pay">
+    <div class="card-head">
+      <h3 id="buys-title">구매 내역</h3>
+      <button class="guide-close" id="buys-close" aria-label="닫기">✕</button>
+    </div>
+    <div id="buys-list" class="buys-list"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ════════════════════════════════════════════
+   설정 & 상태
+   ════════════════════════════════════════════ */
+const API = '/api/profiles';
+const REFLECT_API = '/api/reflections';
+
+// 오행별 캐릭터 · 색상 (img 폴더에 Figma에서 내보낸 PNG를 넣으면 이미지로 표시)
+const EL = {
+  WOOD:  { ko: '목', hanja: '木', name: '나무', color: 'var(--wood)',  emoji: '🦌', img: 'img/wood.svg',  char: '초록 새싹 사슴' },
+  FIRE:  { ko: '화', hanja: '火', name: '불',   color: 'var(--fire)',  emoji: '🦊', img: 'img/fire.svg',  char: '코랄 불꽃 여우' },
+  EARTH: { ko: '토', hanja: '土', name: '흙',   color: 'var(--earth)', emoji: '🐻', img: 'img/earth.svg', char: '꿀빛 흙곰' },
+  METAL: { ko: '금', hanja: '金', name: '금속', color: 'var(--metal)', emoji: '🐯', img: 'img/metal.svg', char: '은빛 아기 호랑이' },
+  WATER: { ko: '수', hanja: '水', name: '물',   color: 'var(--water)', emoji: '🦦', img: 'img/water.svg', char: '푸른 물방울 수달' },
+};
+const PILLAR_MEAN = { 시주: '자녀 · 노년', 일주: '나 · 배우자', 월주: '부모 · 사회', 년주: '조상 · 유년' };
+const RELATIONS = [
+  ['비겁', '나와 같은 기운'], ['식상', '내가 생하는 기운'], ['재성', '내가 극하는 기운'],
+  ['관성', '나를 극하는 기운'], ['인성', '나를 생하는 기운'],
+];
+
+const state = {
+  clientId: getClientId(),
+  calendar: 'SOLAR',
+  ampm: 'AM',
+  concern: null,
+  profiles: [],
+  currentId: readStore('saju.currentId'),
+  editingId: null,
+  gender: null,
+  reflections: [],
+  listView: 'profiles',   // 내 사주 목록: profiles | journal
+  qOffset: {},            // 프로필·질문 종류별 "다른 질문" 누른 횟수
+  drafts: {},             // 저장 전 적던 내용 (탭을 옮겨도 유지)
+  journalFilter: '',
+  products: [],
+  purchases: [],
+  payFor: null,          // { profileId, code }
+  loveView: (['marriage', 'compat', 'reunion'].includes(readStore('saju.loveView')) ? readStore('saju.loveView') : 'compat'),
+  partnerId: null,
+  editingReflection: null,
+  confirmReflection: null,
+};
+
+/* 로그인 대신, 브라우저마다 고유 ID를 만들어 "내 사주"를 구분한다 */
+function getClientId() {
+  let id = readStore('saju.clientId');
+  if (!id) {
+    id = (crypto.randomUUID ? crypto.randomUUID()
+      : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+          const r = Math.random() * 16 | 0;
+          return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        }));
+    writeStore('saju.clientId', id);
+  }
+  return id;
+}
+function readStore(k) { try { return localStorage.getItem(k); } catch { return null; } }
+function writeStore(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} }
+
+/* ════════════════════════════════════════════
+   API 호출
+   ════════════════════════════════════════════ */
+async function api(path = '', options = {}) {
+  return request(API + path, options);
+}
+async function request(url, options = {}) {
+  const res = await fetch(url, {
+    ...options,
+    headers: { 'Content-Type': 'application/json', 'X-Client-Id': state.clientId, ...(options.headers || {}) },
+  });
+  if (res.status === 204) return null;
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    // 서버가 우리 형식의 에러를 보내지 않았다면, 상태 코드와 주소를 보여줘서 원인을 찾기 쉽게 한다
+    const where = url.replace(location.origin, '').split('?')[0];
+    throw new Error(data.message || `${res.status} 오류 · ${where} · 서버를 껐다 켜고 /api/version 을 확인해주세요`);
+  }
+  return data;
+}
+
+async function loadShop() {
+  const [products, purchases] = await Promise.all([request('/api/products'), request('/api/purchases')]);
+  state.products = products; state.purchases = purchases;
+}
+const product = code => state.products.find(x => x.code === code);
+const owns = (p, code) => !!p && p.saju.owned.includes(code);
+const won = n => n.toLocaleString('ko-KR') + '원';
+
+async function loadReflections() {
+  state.reflections = await request(REFLECT_API);
+}
+
+async function loadProfiles() {
+  state.profiles = await api();
+  if (state.currentId && !state.profiles.some(p => String(p.id) === String(state.currentId))) {
+    setCurrent(state.profiles[0]?.id ?? null);
+  }
+  if (!state.currentId && state.profiles.length) setCurrent(state.profiles[0].id);
+}
+
+function current() {
+  return state.profiles.find(p => String(p.id) === String(state.currentId)) || null;
+}
+function setCurrent(id) {
+  state.currentId = id == null ? null : String(id);
+  writeStore('saju.currentId', state.currentId);
+}
+
+/* ════════════════════════════════════════════
+   탭 전환
+   ════════════════════════════════════════════ */
+function showTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
+  if (name === 'result') renderResult();
+  if (name === 'year') renderYear();
+  if (name === 'career') renderCareer();
+  if (name === 'marriage') renderLove();
+  if (name === 'family') renderFamily();
+  if (name === 'list') { renderList(); renderJournal(); applyListView(); }
+  const hash = name === 'list' && state.listView === 'journal' ? 'journal' : name === 'marriage' ? 'love-' + state.loveView : name;
+  if (location.hash !== '#' + hash) history.replaceState(null, '', '#' + hash);
+  window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+}
+
+document.addEventListener('click', e => {
+  const tab = e.target.closest('[data-tab]');
+  if (tab) { if (tab.dataset.tab === 'input') resetForm(); showTab(tab.dataset.tab); return; }
+  const go = e.target.closest('[data-go]');
+  if (go) {
+    const to = go.dataset.go;
+    if (to === 'input') resetForm();
+    if (to === 'journal') { state.listView = 'journal'; showTab('list'); return; }
+    if (to === 'list') state.listView = 'profiles';
+    showTab(to);
+  }
+});
+
+/* ════════════════════════════════════════════
+   공통 렌더 도우미
+   ════════════════════════════════════════════ */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+function avatar(code, size = '') {
+  const e = EL[code];
+  return `<span class="avatar ${size}" style="border-color:${e.color}" title="${e.char}">
+    <img src="${e.img}" alt="${e.char}" onerror="this.replaceWith(document.createTextNode('${e.emoji}'))"></span>`;
+}
+
+function birthText(p) {
+  const d = p.calendar === 'LUNAR' && p.lunarDate
+    ? `음력 ${p.lunarDate.replaceAll('-', '.')}${p.leapMonth ? '(윤달)' : ''} (양력 ${p.birthDate.replaceAll('-', '.')})`
+    : `양력 ${p.birthDate.replaceAll('-', '.')}`;
+  let t = '시간 모름';
+  if (p.birthTime) {
+    const h = +p.birthTime.slice(0, 2);
+    t = `${h < 12 ? '오전' : '오후'} ${h % 12 === 0 ? 12 : h % 12}:${p.birthTime.slice(3, 5)}`;
+  }
+  const g = p.gender === 'F' ? '여성' : '남성';
+  return [d, t, p.birthPlace, g].filter(Boolean).join(' · ');
+}
+
+function emptyState(icon, title, desc) {
+  return `<div class="card empty-state"><span class="big">${icon}</span><h3>${title}</h3><p>${desc}</p>
+    <button class="btn btn-primary" data-go="input">사주 입력하러 가기 ↗</button></div>`;
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ════════════════════════════════════════════
+   탭 3. 결과 화면
+   ════════════════════════════════════════════ */
+function renderResult() {
+  const root = document.getElementById('result-root');
+  const p = current();
+  if (!p) { root.innerHTML = emptyState('🌙', '아직 읽을 사주가 없어요', '출생 정보를 입력하면 나의 사주팔자와 오행 균형을 보여드려요.'); return; }
+
+  const s = p.saju;
+  const firstName = p.name.length > 2 ? p.name.slice(1) : p.name;
+
+  const pillarsHtml = s.pillars.map(pl => {
+    if (!pl.korean) return `<div class="pillar"><span class="pillar-label">${pl.label}</span>
+      <div class="pillar-char empty">시간 모름</div><div class="pillar-char empty">-</div></div>`;
+    // (시간을 모르면 시주는 비워두고 나머지 여섯 글자로 풀이)
+    const me = pl.label === '일주';
+    return `<div class="pillar"><span class="pillar-label">${pl.label}${me ? ' · 나' : ''}<em class="pillar-mean">${PILLAR_MEAN[pl.label]}</em></span>
+      <div class="pillar-char el-${pl.stemElement} ${me ? 'me' : ''}">${pl.hanja[0]}<small>${pl.korean[0]} · ${EL[pl.stemElement].ko}</small></div>
+      <div class="pillar-char el-${pl.branchElement}">${pl.hanja[1]}<small>${pl.korean[1]} · ${EL[pl.branchElement].ko}</small></div></div>`;
+  }).join('');
+
+  const elementsHtml = s.elements.map(el => `
+    <div class="el-item">
+      <div class="el-head">
+        <span class="el-label">${avatar(el.code)} ${el.korean} ${el.hanja} · ${el.meaning}</span>
+        <span class="el-pct">${el.percent}%</span>
+      </div>
+      <div class="bar"><i data-w="${el.percent}" style="background:${EL[el.code].color}"></i></div>
+    </div>`).join('');
+
+  const strong = EL[s.balance.strongest], weak = EL[s.balance.weakest];
+
+  root.innerHTML = `
+  <div style="display:flex;flex-direction:column;gap:28px">
+    <div class="crumb-row"><span class="crumb">출생 정보 / 사주 결과</span><span class="tag">무료 사주 결과</span></div>
+
+    <div class="intro">
+      <span class="eyebrow">사주 결과 · 한눈에 보기</span>
+      <h1 class="title">${esc(p.name)} 님의 사주, 한눈에 보기</h1>
+      <p class="lead">타고난 여덟 글자와 오행 분포, 나를 나타내는 핵심 성향을 확인해보세요.</p>
+    </div>
+
+    <div class="card profile-bar">
+      <span class="profile-name">${esc(p.name)} 님 <span class="tag">나의 프로필</span></span>
+      <span class="profile-info">${esc(birthText(p))}</span>
+      <button class="link" data-edit="${p.id}">정보 수정 ↗</button>
+    </div>
+
+    <div class="card">
+      <div class="card-head" style="margin-bottom:20px">
+        <div><div class="card-title">나의 사주팔자</div><div class="notice">테두리가 강조된 글자가 나를 나타내는 일간이에요</div></div>
+        <span class="card-sub">네 기둥 · 여덟 글자</span>
+      </div>
+      <div class="pillars">${pillarsHtml}</div>
+
+      <details class="howto" ${readStore('saju.howto') === 'closed' ? '' : 'open'}>
+        <summary>📖 사주팔자, 이렇게 읽어요</summary>
+        <div class="howto-grid">
+          <div class="howto-item">
+            <b>① 네 기둥</b>
+            <p>태어난 <b>년 · 월 · 일 · 시</b>가 각각 하나의 기둥이에요. 전통 표기에 따라 오른쪽부터 년주 → 월주 → 일주 → 시주 순서로 읽어요.</p>
+          </div>
+          <div class="howto-item">
+            <b>② 위 글자 · 아래 글자</b>
+            <p>기둥마다 위 칸은 하늘의 기운인 <b>천간</b>, 아래 칸은 땅의 기운인 <b>지지</b>예요. 그래서 4기둥 × 2글자 = <b>여덟 글자(팔자)</b>가 돼요.</p>
+          </div>
+          <div class="howto-item">
+            <b>③ 나를 나타내는 글자</b>
+            <p>분홍 테두리가 있는 <b>일주의 위 글자(일간)</b>가 바로 '나'예요. ${esc(firstName)} 님은 <b>${s.core.dayMasterHanja} ${s.core.dayMaster}${EL[s.core.dayMasterElement].ko}</b>이에요. 나머지 글자는 모두 이 글자와의 관계로 풀이해요.</p>
+          </div>
+          <div class="howto-item">
+            <b>④ 색 = 오행</b>
+            <p>칸의 색은 그 글자의 오행이에요.
+              <span class="howto-dots">${['WOOD','FIRE','EARTH','METAL','WATER'].map(c => `<span><i class="el-${c}"></i>${EL[c].ko}</span>`).join('')}</span>
+              오른쪽 아래 작은 글씨는 한글 읽는 법과 오행이에요.</p>
+          </div>
+        </div>
+        <p class="howto-foot">기둥마다 보는 의미도 달라요. <b>년주</b>는 조상과 어린 시절, <b>월주</b>는 부모·형제와 사회생활, <b>일주</b>는 나와 배우자, <b>시주</b>는 자녀와 노년을 나타낸다고 봐요. 태어난 계절을 알려주는 <b>월지</b>(월주 아래 글자)는 영향력이 커서 오행 비율에 더 크게 반영했어요.</p>
+      </details>
+    </div>
+
+    <div class="grid-2">
+      <div class="card core">
+        <div class="card-head"><span class="crumb">${esc(firstName)} 님을 읽는 한 문장</span><span style="color:var(--accent)">✦</span></div>
+        <p class="core-headline">${esc(s.core.headline)}</p>
+        <p class="core-desc">${esc(s.core.description)}</p>
+        <div class="chips">${s.core.keywords.map(k => `<span class="chip">${esc(k)}</span>`).join('')}</div>
+        <div class="core-more">
+          ${(s.core.more || []).map((t, i) => `<h4>${['사람들 사이에서', '일할 때', '지칠 때'][i]}</h4><p>${esc(t)}</p>`).join('')}
+        </div>
+        <p class="basis">풀이 근거 · 일간 <b>${s.core.dayMasterHanja} ${s.core.dayMaster}${EL[s.core.dayMasterElement].ko}</b> (${EL[s.core.dayMasterElement].name}의 기운)</p>
+      </div>
+      <div class="card">
+        <div class="card-head" style="margin-bottom:17px"><span class="card-title">나의 오행 균형</span><span class="card-sub">월지 가중치 반영</span></div>
+        <div class="el-list">${elementsHtml}</div>
+        <p class="notice" style="margin-top:17px">높고 낮음은 좋고 나쁨을 의미하지 않아요.<br>태어난 계절(월지)의 기운은 3배로 반영했어요.</p>
+      </div>
+    </div>
+
+    <div class="grid-3">
+      <div class="card tip-card">
+        <div class="head">${avatar(s.balance.strongest, 'lg')}<div><span class="eyebrow">가장 두드러진 기운</span><h3>${strong.ko} ${strong.hanja} · ${strong.char}</h3></div></div>
+        <p>${esc(s.balance.strongText)}</p>
+      </div>
+      <div class="card tip-card">
+        <div class="head">${avatar(s.balance.weakest, 'lg')}<div><span class="eyebrow">채워주면 좋은 기운</span><h3>${weak.ko} ${weak.hanja} · ${weak.char}</h3></div></div>
+        <p>${esc(s.balance.weakTip)}</p>
+      </div>
+      <div class="card reflect" data-reflect="core"></div>
+    </div>
+
+    ${concernCard(p)}
+
+    <div class="crumb-row" style="flex-wrap:wrap;gap:12px">
+      <p class="notice">사주 해석은 자기 성찰을 위한 참고이며, 미래나 특정 결과를 보장하지 않습니다.</p>
+    </div>
+    ${paidSection(p)}
+  </div>`;
+
+  requestAnimationFrame(() => root.querySelectorAll('.bar i').forEach(b => b.style.width = b.dataset.w + '%'));
+  const howto = root.querySelector('.howto');
+  howto.addEventListener('toggle', () => writeStore('saju.howto', howto.open ? 'open' : 'closed'));
+  mountReflect(root.querySelector('[data-reflect]'), p, 'core');
+}
+
+/** 내 결과: 입력한 고민에 맞춘 풀이 + 맞는 심화 리포트 추천 */
+function concernCard(p) {
+  const c = p.saju.concern;
+  if (!c) return `
+    <div class="card concern-card">
+      <span class="eyebrow">고민 맞춤 풀이</span>
+      <h3>요즘 고민이 있다면 알려주세요</h3>
+      <p class="body">사주 정보를 수정해서 요즘 가장 큰 고민을 적으면, ${esc(p.name)} 님의 사주로 그 고민을 함께 들여다보고 가장 잘 맞는 리포트를 추천해드려요.</p>
+      <button class="btn btn-ghost" style="align-self:flex-start" data-edit="${p.id}">고민 적으러 가기 ↗</button>
+    </div>`;
+  const info = REPORT_INFO[c.product], pr = product(c.product), open = owns(p, c.product);
+  return `
+    <div class="card concern-card">
+      <div class="crumb-row"><span class="eyebrow">고민 맞춤 풀이</span><span class="tag">${esc(c.label)}</span></div>
+      <h3>${esc(p.name)} 님의 고민, 별에게 물어봤어요</h3>
+      ${c.paragraphs.map(t => `<p class="body">${esc(t)}</p>`).join('')}
+      <div class="concern-cta">
+        <p>${info.icon} ${esc(c.pitch)}</p>
+        ${open ? `<button class="btn btn-ghost" data-goreport="${c.product}">심화 리포트 보기 ↗</button>`
+               : `<button class="btn btn-primary" data-buy="${c.product}">${pr ? won(pr.price) : ''} · ${info.name()} 심화 리포트 열기</button>`}
+      </div>
+    </div>`;
+}
+
+/* ════════════════════════════════════════════
+   탭 4. 올해 운세
+   ════════════════════════════════════════════ */
+function renderYear() {
+  const root = document.getElementById('year-root');
+  const p = current();
+  if (!p) { root.innerHTML = emptyState('✨', '올해 운세를 보려면 사주가 필요해요', '출생 정보를 입력하면 올해의 기운과 나의 관계를 풀이해드려요.'); return; }
+
+  const y = p.saju.thisYear, core = p.saju.core;
+  const yEl = EL[y.yearElement], meEl = EL[core.dayMasterElement];
+
+  root.innerHTML = `
+  <div style="display:flex;flex-direction:column;gap:28px">
+    <div class="crumb-row"><span class="crumb">내 사주 / ${esc(p.name)} / ${y.year}년 운세</span><span class="tag">✦ ${y.year}년 운세</span></div>
+    <div class="intro">
+      <span class="eyebrow">${y.year}년 · ${y.pillar}년 전반적인 운세</span>
+      <h1 class="title">${y.year}년, ${esc(p.name)} 님에게 오는 흐름</h1>
+      <p class="lead">올해를 이끄는 기운과 나를 나타내는 일간의 관계로 한 해의 흐름을 읽어요.</p>
+    </div>
+
+    <div class="reading">
+      <article class="card reading-main">
+        <div class="year-hero">
+          <span class="ganji">${y.pillarHanja}</span>
+          <span><span class="ganji-sub">${y.year}년 ${y.pillar}년</span><br>${avatar(y.yearElement, 'lg')}</span>
+        </div>
+        <div>
+          <span class="chapter-label">CHAPTER · ${y.relation} (${y.relationDesc})</span>
+          <h2 class="chapter-title">${esc(y.title)}</h2>
+        </div>
+        <div class="summary-cards">
+          <div class="summary-card"><div class="k">주요 키워드</div><div class="v">${esc(y.keywords)}</div></div>
+          <div class="summary-card"><div class="k">주의 포인트</div><div class="v">${esc(y.caution)}</div></div>
+        </div>
+        <p class="reading-body">${esc(y.body)}</p>
+        <div class="action-box">
+          <span style="font-size:18px">✎</span>
+          <div><div class="t">올해의 실천 문구</div><div class="c">${esc(y.action)}</div></div>
+        </div>
+        <p class="notice">풀이는 자기 성찰을 위한 참고예요. 중요한 결정은 현실의 정보와 함께 판단해주세요.</p>
+      </article>
+
+      <aside class="side">
+        <div class="card">
+          <h4>✦ 풀이 근거</h4>
+          <p style="font-size:14px;color:var(--body)">올해 천간 <b>${y.pillarHanja[0]}</b>은 <b>${yEl.ko}(${yEl.name})</b>, 나의 일간 <b>${core.dayMasterHanja}</b>은 <b>${meEl.ko}(${meEl.name})</b>의 기운이에요.</p>
+          <div class="relation-map" style="margin-top:14px">
+            ${RELATIONS.map(([n, d]) => `<div class="rel ${n === y.relation ? 'on' : ''}"><span>${n}</span><span>${d}</span></div>`).join('')}
+          </div>
+        </div>
+        <div class="card reflect" data-reflect="year"></div>
+        <button class="link" style="text-align:left" data-go="list">← 내 사주 목록으로</button>
+      </aside>
+    </div>
+  </div>`;
+  mountReflect(root.querySelector('[data-reflect]'), p, 'year');
+  root.firstElementChild.insertAdjacentHTML('beforeend', premiumSlot('YEAR'));
+  mountPremium(root, p, 'YEAR');
+}
+
+/* ════════════════════════════════════════════
+   직장운 · 결혼운 공통
+   ════════════════════════════════════════════ */
+function topicFrame(p, o) {
+  return `
+  <div style="display:flex;flex-direction:column;gap:28px">
+    <div class="crumb-row"><span class="crumb">내 사주 / ${esc(p.name)} / ${o.crumb}</span><span class="tag">${o.tag}</span></div>
+    <div class="intro">
+      <span class="eyebrow">${o.eyebrow}</span>
+      <h1 class="title">${o.title}</h1>
+      <p class="lead">${o.lead}</p>
+    </div>
+    <div class="reading">
+      <article class="card reading-main">${o.main}
+        <p class="notice">풀이는 자기 성찰을 위한 참고예요. 중요한 결정은 현실의 정보와 함께 판단해주세요.</p>
+      </article>
+      <aside class="side">${o.side}
+        <div class="card reflect" data-reflect="${o.type}"></div>
+        <button class="link" style="text-align:left" data-go="list">← 내 사주 목록으로</button>
+      </aside>
+    </div>
+  </div>`;
+}
+
+function emptyTopic(icon, what) {
+  return emptyState(icon, `${what}을 보려면 사주가 필요해요`, '출생 정보를 입력하면 사주의 십성 분포로 풀이해드려요.');
+}
+
+/* ════════════════════════════════════════════
+   탭 5. 직장운
+   ════════════════════════════════════════════ */
+function renderCareer() {
+  const root = document.getElementById('career-root');
+  const p = current();
+  if (!p) { root.innerHTML = emptyTopic('🧭', '직장운'); return; }
+  const c = p.saju.career, core = p.saju.core, y = p.saju.year;
+
+  const tg = c.tenGods.map(t => `
+    <div class="tg-row ${t.name === c.dominant ? 'on' : ''}">
+      <b>${t.name}</b>
+      <div class="bar" title="${esc(t.desc)}"><i data-w="${t.percent}"></i></div>
+      <span class="pct">${t.percent}%</span>
+    </div>`).join('');
+
+  root.innerHTML = topicFrame(p, {
+    type: 'career', crumb: '직장운', tag: '🧭 직장운',
+    eyebrow: `직장운 · 가장 많은 기운 ${c.dominant}`,
+    title: `${esc(p.name)} 님에게 잘 맞는 일의 결`,
+    lead: '사주 여덟 글자가 나(일간)와 맺는 관계, 십성의 분포로 일하는 스타일과 잘 맞는 분야를 읽어요.',
+    main: `
+      <div class="topic-hero career-hero">
+        <span class="big">🧭</span>
+        <span><span class="lbl">나의 일하는 스타일</span><br><span class="val">${esc(c.type)}</span></span>
+      </div>
+      <div>
+        <span class="chapter-label">CHAPTER · ${c.dominant} (${esc(c.dominantDesc)})</span>
+        <h2 class="chapter-title">${esc(c.type)}</h2>
+      </div>
+      <div class="summary-cards">
+        <div class="summary-card"><div class="k">주요 키워드</div><div class="v">${esc(c.keywords)}</div></div>
+        <div class="summary-card"><div class="k">주의 포인트</div><div class="v">${esc(c.caution)}</div></div>
+      </div>
+      <p class="reading-body">${esc(c.body)}</p>
+      <div>
+        <div class="k notice" style="margin-bottom:10px">잘 맞는 분야</div>
+        <div class="fields">${c.fields.map(f => `<span class="chip">${esc(f)}</span>`).join('')}</div>
+      </div>
+      <div class="action-box">
+        <span style="font-size:18px">✎</span>
+        <div><div class="t">${y.year}년 일의 흐름 · ${c.thisYearRelation}</div><div class="c">${esc(c.thisYear)}</div></div>
+      </div>
+      <div class="action-box">
+        <span style="font-size:18px">✎</span>
+        <div><div class="t">이번 주 실천 문구</div><div class="c">${esc(c.action)}</div></div>
+      </div>`,
+    side: `
+      <div class="card">
+        <h4>✦ 풀이 근거 · 십성 분포</h4>
+        <p class="side-note" style="margin-bottom:14px">일간 <b>${core.dayMasterHanja}</b>(${EL[core.dayMasterElement].ko}) 기준으로 나머지 글자를 셌어요. 태어난 계절(월지)은 2배로 반영했어요.</p>
+        <div class="tg-list">${tg}</div>
+      </div>`,
+  });
+  requestAnimationFrame(() => root.querySelectorAll('.bar i').forEach(b => b.style.width = b.dataset.w + '%'));
+  mountReflect(root.querySelector('[data-reflect]'), p, 'career');
+  root.firstElementChild.insertAdjacentHTML('beforeend', premiumSlot('CAREER'));
+  mountPremium(root, p, 'CAREER');
+}
+
+/* ════════════════════════════════════════════
+   탭 6. 결혼운
+   ════════════════════════════════════════════ */
+const LEVEL_TEXT = { NONE: '드러나지 않음', BALANCED: '알맞음', MANY: '많음' };
+
+function renderMarriage() {
+  const root = document.getElementById('love-body');
+  const p = current();
+  if (!p) { root.innerHTML = emptyTopic('💍', '결혼운'); return; }
+  const m = p.saju.marriage, core = p.saju.core;
+  const who = p.gender === 'F' ? '여성' : '남성';
+
+  root.innerHTML = topicFrame(p, {
+    type: 'marriage', crumb: '결혼운', tag: '💞 결혼운',
+    eyebrow: `결혼운 · 배우자 별 ${m.starName} ${LEVEL_TEXT[m.level]}`,
+    title: `${esc(p.name)} 님의 인연과 관계의 결`,
+    lead: '배우자를 나타내는 기운(배우자 별)과 배우자 자리(일지)로 관계에서 편안함을 느끼는 방식을 읽어요.',
+    main: `
+      <div class="topic-hero marriage-hero art-hero">
+        ${ART.rings()}
+        <span><span class="lbl">배우자 별 · ${m.starName}</span><br><span class="val">${LEVEL_TEXT[m.level]}</span></span>
+        <span><span class="lbl">배우자 자리 · 일지</span><br><span class="val">${m.palaceHanja} ${m.palace}</span></span>
+      </div>
+      <div>
+        <span class="chapter-label">CHAPTER · 인연의 흐름</span>
+        <h2 class="chapter-title">${esc(m.title)}</h2>
+      </div>
+      <div class="summary-cards">
+        <div class="summary-card"><div class="k">주요 키워드</div><div class="v">${esc(m.keywords)}</div></div>
+        <div class="summary-card"><div class="k">주의 포인트</div><div class="v">${esc(m.caution)}</div></div>
+      </div>
+      <p class="reading-body">${esc(m.body)}</p>
+      <div class="palace">
+        <div class="pillar-char el-${m.palaceElement}">${m.palaceHanja}<small>${m.palace} · ${EL[m.palaceElement].ko}</small></div>
+        <p class="reading-body"><b style="color:var(--accent);font-weight:500">배우자 자리 · ${m.palaceRelation}</b><br>${esc(m.palaceText)}</p>
+      </div>
+      <div class="action-box">
+        <span style="font-size:18px">✎</span>
+        <div><div class="t">관계를 위한 실천 문구</div><div class="c">${esc(m.action)}</div></div>
+      </div>`,
+    side: `
+      <div class="card">
+        <h4>✦ 풀이 근거</h4>
+        <p class="side-note">전통 명리에서 ${who}의 배우자 별은 <b>${m.starName}</b>(${esc(m.starDesc)})이에요. 사주에서 ${m.starName} 점수는 <b>${m.starScore}점</b>이라 <b>${LEVEL_TEXT[m.level]}</b>으로 읽었어요.</p>
+        <hr class="divider" style="margin:14px 0">
+        <p class="side-note">배우자 자리인 일지 <b>${m.palaceHanja}</b>(${EL[m.palaceElement].ko})는 나의 일간 <b>${core.dayMasterHanja}</b>(${EL[core.dayMasterElement].ko})에게 <b>${m.palaceRelation}</b>이에요.</p>
+        <p class="notice" style="margin-top:12px">결혼 여부나 시기를 정하는 풀이가 아니라, 관계에서 나를 이해하기 위한 참고예요.</p>
+      </div>`,
+  });
+  mountReflect(root.querySelector('[data-reflect]'), p, 'marriage');
+  root.firstElementChild.insertAdjacentHTML('beforeend', premiumSlot('MARRIAGE'));
+  mountPremium(root, p, 'MARRIAGE');
+}
+
+/* ════════════════════════════════════════════
+   리포트 그리기 (무료 · 유료 공용)
+   ════════════════════════════════════════════ */
+/** 별점이 있는 항목 (영역별 풀이): 아이콘 · 별점 · 키워드 카드 */
+const AREA_ICON = { '일 · 공부': '💼', '재물': '💰', '관계': '💞', '컨디션': '🌿' };
+function scoreCards(items) {
+  return `<div class="area-grid">${items.map(i => `
+    <div class="area-card">
+      <div class="area-top"><span class="area-icon">${AREA_ICON[i.label] || '✦'}</span>
+        <div><span class="area-name">${esc(i.label)}</span>
+          <span class="area-stars" aria-label="5점 만점에 ${i.score}점">${'★'.repeat(i.score)}<i>${'★'.repeat(5 - i.score)}</i></span></div></div>
+      <b class="area-key">${esc(i.tag)}</b>
+      <div class="area-bar"><i style="width:${i.score * 20}%"></i></div>
+      <p>${esc(i.text)}</p>
+    </div>`).join('')}</div>`;
+}
+
+/** 십성 분포: 막대 그래프 + 가장 많은 / 가장 적은 기운 강조 */
+const TG_ICON = { 비겁: '🔥', 식상: '🎨', 재성: '💰', 관성: '🏛', 인성: '📚' };
+function tenGodHtml(items) {
+  const pct = i => parseInt(i.tag, 10) || 0;
+  const max = Math.max(...items.map(pct)), min = Math.min(...items.map(pct));
+  return `<div class="tg-cols">${items.map(i => {
+    const v = pct(i), top = v === max, low = v === min;
+    return `<div class="tg-col ${top ? 'top' : ''}" title="${esc(i.text)}">
+      <div class="tg-head"><span>${TG_ICON[i.label] || '✦'} <b>${esc(i.label)}</b></span><span class="tg-pct">${v}%</span></div>
+      <div class="tg-mini"><i style="width:${v ? Math.max(Math.round(v / max * 100), 6) : 0}%"></i></div>
+      <p>${top ? '<em>가장 많음 · </em>' : low ? '<em class="dim">가장 적음 · </em>' : ''}${esc(i.text.split('.')[0])}</p>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+/** 앞으로 3년: 연도 타임라인 (올해 강조 · 일 운 지수) */
+const YEAR_MOOD = { 비겁: ['🚀', '도전 · 독립의 해'], 식상: ['🎤', '실력을 보여주는 해'], 재성: ['💰', '성과를 거두는 해'],
+                    관성: ['🏆', '책임 · 승진의 해'], 인성: ['📚', '공부 · 충전의 해'] };
+function careerYearsHtml(items) {
+  return `<div class="cy-line">${items.map((i, n) => {
+    const rel = (i.tag || '').split('·').pop().trim(), [emoji, mood] = YEAR_MOOD[rel] || ['✦', ''];
+    return `<div class="cy-node ${n === 0 ? 'now' : ''}">
+      <div class="cy-dot">${emoji}</div>
+      <span class="cy-year">${esc(i.label)}${n === 0 ? ' <em>올해</em>' : ''}</span>
+      <b class="cy-mood">${mood}</b>
+      <span class="cy-tag">${esc(i.tag)}</span>
+      <div class="cy-score"><small>일 운</small>${[1, 2, 3, 4, 5].map(k => `<i class="${k <= i.score ? 'on' : ''}"></i>`).join('')}</div>
+      <p>${esc(i.text.replace(/^[^.]*해\.\s*/, ''))}</p>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+/** 잘 맞는 일 TOP 4: 순위 메달 + 적합도 */
+function fieldsHtml(items) {
+  const medal = ['🥇', '🥈', '🥉', '🏅'], match = [96, 91, 87, 83];
+  return `<div class="job-grid">${items.map((i, n) => `
+    <div class="job-card ${n === 0 ? 'best' : ''}">
+      <div class="job-top"><span class="job-medal">${medal[n] || '✦'}</span><b>${esc(i.label)}</b></div>
+      <div class="job-match"><span>적합도</span><div class="job-bar"><i style="width:${match[n] || 80}%"></i></div><strong>${match[n] || 80}%</strong></div>
+      <p>${esc(i.text)}</p>
+    </div>`).join('')}</div>`;
+}
+
+/** 직장 안에서의 관계: 회사 캐릭터 + 상사 · 동료 · 후배 케미 카드 */
+const OFFICE_ICON = { 상사와: '👔', 동료와: '🤝', 후배와: '🌱' };
+function officeHtml(s) {
+  const ch = (s.lead || '').replace('회사에서의 나는 ', '');
+  const [emoji, ...name] = ch.split(' ');
+  return `
+    <div class="office-hero"><span class="office-emoji">${esc(emoji)}</span>
+      <div><span class="eyebrow">회사에서의 나는</span><b>${esc(name.join(' '))}</b></div></div>
+    <div class="office-grid">${s.items.map(i => `
+      <div class="office-card">
+        <div class="office-top"><span>${OFFICE_ICON[i.label] || '✦'}</span><b>${esc(i.label.replace('와', ''))}</b>
+          <span class="chem" aria-label="케미 ${i.score}점"><small>케미</small>${'💗'.repeat(i.score)}<i>${'🤍'.repeat(5 - i.score)}</i></span></div>
+        <p class="office-say">${esc(i.tag)}</p>
+        <p class="office-text">${esc(i.text)}</p>
+      </div>`).join('')}</div>`;
+}
+
+/** 강점 · 약점 · 보완: 키워드는 위에 칩으로, 풀이는 줄글로 */
+function swHtml(items) {
+  const of = t => items.filter(i => i.tag === t);
+  const chips = (t, cls, icon, title) => of(t).length ? `<div class="sw-keys ${cls}"><span>${icon} ${title}</span>${of(t).map(i => `<em>${esc(i.label)}</em>`).join('')}</div>` : '';
+  const prose = (t, title) => of(t).length ? `<h4>${title}</h4>${of(t).map(i => `<p class="body">${esc(i.text)}</p>`).join('')}` : '';
+  return `
+    <div class="sw-top">${chips('강점', '', '💪', '강점')}${chips('약점', 'weak', '🌧', '약점')}${chips('보완', 'fill', '🌱', '보완')}</div>
+    <div class="sw-prose">${prose('강점', '나의 강점')}${prose('약점', '조심하면 좋은 점')}${prose('보완', '보완하면 좋은 기운')}</div>`;
+}
+
+/** 행운 포인트: 부족한 오행 캐릭터 + 색 견본 · 나침반 · 시계 카드 */
+const LUCKY_COLOR = { 초록: '#4caf73', 연두: '#a5d86b', 빨강: '#e5484d', 주황: '#f28b30', 분홍: '#ff70cf', 노랑: '#f2c94c',
+  베이지: '#d9c3a0', 갈색: '#9a6b45', 흰색: '#f5f5f5', 은색: '#c0c6cf', 회색: '#8a8f98', 검정: '#1b1b1f', 남색: '#2b3a8c', 파랑: '#3b82f6' };
+const LUCKY_DIR = { 동쪽: 90, 남쪽: 180, 서쪽: 270, 북쪽: 0 };
+function luckyHtml(items) {
+  const get = l => items.find(i => i.label === l)?.text || '';
+  const weak = current()?.saju.balance.weakest, el = EL[weak];
+  const colors = get('색').split('·').map(c => c.trim()).filter(Boolean);
+  const dirText = get('방향'), deg = Object.entries(LUCKY_DIR).find(([k]) => dirText.includes(k))?.[1];
+  const list = t => t.split(/[·,]/).map(x => x.trim()).filter(Boolean);
+  return `
+  <div class="lucky">
+    ${el ? `<div class="lucky-hero">${avatar(weak, 'lg')}<div><span class="eyebrow">올해 채우면 좋은 기운</span>
+      <b>${el.ko}(${el.hanja}) · ${el.name}의 기운</b><p>${el.char}의 기운을 곁에 두면 사주의 균형이 맞춰져요.</p></div></div>` : ''}
+    <div class="lucky-grid">
+      <div class="lucky-card"><span class="lk">🎨 행운의 색</span>
+        <div class="swatches">${colors.map(c => `<span><i style="background:${LUCKY_COLOR[c] || 'var(--accent)'}"></i>${esc(c)}</span>`).join('')}</div></div>
+      <div class="lucky-card"><span class="lk">🧭 행운의 방향</span>
+        <div class="compass-row">${deg != null ? `<div class="compass"><b style="transform:rotate(${deg}deg)"></b><em>N</em></div>` : '<div class="compass center"><b></b></div>'}
+          <strong>${esc(dirText)}</strong></div></div>
+      <div class="lucky-card"><span class="lk">⏰ 행운의 시간</span><strong class="big">${esc(get('시간'))}</strong>
+        <p>중요한 연락이나 결정은 이 시간대에 해보세요.</p></div>
+      <div class="lucky-card wide"><span class="lk">🌱 기운을 채우는 활동</span>
+        <div class="chips">${list(get('활동')).map(t => `<span class="chip">${esc(t)}</span>`).join('')}</div></div>
+      <div class="lucky-card wide"><span class="lk">🎁 곁에 두면 좋은 물건</span>
+        <div class="chips">${list(get('물건')).map(t => `<span class="chip">${esc(t)}</span>`).join('')}</div></div>
+    </div>
+  </div>`;
+}
+
+/** 한 줄 목록: ☐ 는 실제로 체크할 수 있는 체크리스트(이 브라우저에 저장), 숫자는 단계 번호 */
+function simpleList(r, s) {
+  const key = `saju.check.${current()?.id}.${r.code}.${s.title}`;
+  let done = [];
+  try { const v = JSON.parse(readStore(key) || '[]'); done = Array.isArray(v) ? v : (v.done || []); } catch {}
+  if (s.items.every(i => i.label === '☐')) {
+    // 성찰 일기에서 모아 볼 수 있게 항목 문구도 함께 저장
+    try { writeStore(key, JSON.stringify({ pid: current()?.id, code: r.code, title: s.title, items: s.items.map(i => i.text), done,
+      at: (JSON.parse(readStore(key) || '{}').at) || null })); } catch {}
+  }
+  const check = s.items.every(i => i.label === '☐');
+  return `<ul class="rep-items simple ${check ? 'checklist' : ''}" ${check ? `data-check-key="${esc(key)}"` : ''}>${s.items.map((i, n) => check
+    ? `<li><label class="ck"><input type="checkbox" data-n="${n}" ${done.includes(n) ? 'checked' : ''}><span class="box"></span><p>${esc(i.text)}</p></label></li>`
+    : `<li><span class="mark ${/^\d$/.test(i.label) ? 'num' : ''}">${esc(i.label)}</span><p>${esc(i.text)}</p></li>`).join('')}</ul>
+    ${check ? `<p class="notice ck-count">${done.length} / ${s.items.length} 완료 · 체크한 내용은 이 기기에 저장돼요</p>` : ''}`;
+}
+document.addEventListener('change', e => {
+  const box = e.target.closest('.checklist input[type=checkbox]');
+  if (!box) return;
+  const ul = box.closest('.checklist');
+  const done = [...ul.querySelectorAll('input:checked')].map(x => +x.dataset.n);
+  saveChecks(ul.dataset.checkKey, done);
+  if (ul.closest('.practice')) { document.getElementById('practice-box').innerHTML = practiceCard(); return; }
+  const cnt = ul.nextElementSibling;
+  if (cnt?.classList.contains('ck-count')) cnt.textContent = `${done.length} / ${ul.querySelectorAll('input').length} 완료 · 체크한 내용은 이 기기에 저장돼요`;
+});
+
+/* ── 실천 체크 저장 · 모아 보기 ── */
+function readChecks() {
+  const out = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k.startsWith('saju.check.')) continue;
+      const v = JSON.parse(localStorage.getItem(k));
+      if (v && !Array.isArray(v) && v.items) out.push({ key: k, ...v });
+    }
+  } catch {}
+  return out;
+}
+function saveChecks(key, done) {
+  let v = {};
+  try { v = JSON.parse(readStore(key) || '{}'); } catch {}
+  if (Array.isArray(v)) v = {};
+  writeStore(key, JSON.stringify({ ...v, done, at: new Date().toISOString() }));
+}
+
+/** 성찰 일기 맨 위: 심화 리포트에서 체크한 실천 목록 */
+function practiceCard() {
+  const name = { MARRIAGE: '💍 결혼운', FAMILY: '🏡 가족운' };
+  const list = readChecks()
+    .filter(c => state.profiles.some(p => String(p.id) === String(c.pid)))
+    .filter(c => !state.journalFilter || String(c.pid) === String(state.journalFilter))
+    .sort((a, b) => (b.at || '').localeCompare(a.at || ''));
+  if (!list.length) return '';
+  const total = list.reduce((n, c) => n + c.items.length, 0), done = list.reduce((n, c) => n + c.done.length, 0);
+  return `
+    <article class="card practice">
+      <div class="practice-head">
+        <div><span class="eyebrow">나의 실천 체크</span><h3>심화 리포트에서 고른 실천들</h3></div>
+        <div class="practice-total"><b>${done}</b> / ${total}<small>완료</small></div>
+      </div>
+      ${list.map(c => {
+        const p = state.profiles.find(x => String(x.id) === String(c.pid));
+        const pct = Math.round(c.done.length / c.items.length * 100);
+        return `<div class="practice-group">
+          <div class="pg-head"><b>${name[c.code] || c.code}</b><span class="tag">${esc(p.name)}</span>
+            <span class="pg-pct">${c.done.length}/${c.items.length}</span></div>
+          <div class="pg-bar"><i style="width:${pct}%"></i></div>
+          <ul class="rep-items simple checklist" data-check-key="${esc(c.key)}">${c.items.map((t, n) => `
+            <li><label class="ck"><input type="checkbox" data-n="${n}" ${c.done.includes(n) ? 'checked' : ''}><span class="box"></span><p>${esc(t)}</p></label></li>`).join('')}</ul>
+        </div>`;
+      }).join('')}
+    </article>`;
+}
+
+function reportHtml(r) {
+  return r.sections.map(s => `
+    <section class="rep-sec">
+      <h3>${esc(s.title)}</h3>
+      ${s.lead && s.title !== '직장 안에서의 관계' ? `<p class="rep-lead">${esc(s.lead)}</p>` : ''}
+      ${s.paragraphs.map(t => `<p class="body">${esc(t)}</p>`).join('')}
+      ${s.title === '올해의 행운 포인트' ? luckyHtml(s.items) : s.title.startsWith('십성 분포') ? tenGodHtml(s.items) : s.title === '강점과 약점' ? swHtml(s.items) : s.title === '직장 안에서의 관계' ? officeHtml(s) : s.title === '앞으로 3년 일의 흐름' ? careerYearsHtml(s.items) : s.title === '잘 맞는 일 TOP 4' ? fieldsHtml(s.items) : s.items.some(i => i.score) ? scoreCards(s.items) : s.items.length && s.items.every(i => i.label.length <= 1) ? simpleList(r, s) : s.items.length ? `<ul class="rep-items">${s.items.map(i => `
+        <li><div class="rep-item-head"><b>${esc(i.label)}</b>${i.tag ? `<span class="tag">${esc(i.tag)}</span>` : ''}</div>
+        <p>${esc(i.text)}</p></li>`).join('')}</ul>` : ''}
+    </section>`).join('');
+}
+
+/* ════════════════════════════════════════════
+   유료 심화 리포트
+   ════════════════════════════════════════════ */
+const REPORT_INFO = {
+  YEAR: { icon: '✨', name: () => `${current()?.saju.year.year ?? ''}년 운세`, go: ['year'],
+          preview: ['올해 총론 심화', '이번 달부터 12개월 월별 흐름', '분기별 실천 플랜', '영역별 풀이 (일 · 재물 · 관계 · 컨디션)', '나의 오행으로 본 올해', '올해의 행운 포인트'] },
+  CAREER: { icon: '🧭', name: () => '직장운', go: ['career'],
+          preview: ['일하는 스타일 심화', '십성 분포로 본 일의 힘', '강점 · 약점 · 보완할 기운', '직장 안에서의 관계', '앞으로 3년 일의 흐름', '잘 맞는 일 TOP 4'] },
+  MARRIAGE: { icon: '💍', name: () => '결혼운', go: ['marriage', 'marriage'],
+          preview: ['한눈에 보는 결혼운', '배우자 별 · 배우자 자리 심화', '좋은 인연을 알아보는 신호', '연애할 때 갈등을 줄이는 법', '앞으로 6년 인연의 흐름', '결혼 후의 생활'] },
+  COMPAT: { icon: '💞', name: () => '궁합', go: ['marriage', 'compat'],
+          preview: ['두 사람의 기운 심화', '생활 리듬 (배우자 자리)', '서로 채워주는 오행', '갈등을 줄이는 대화법', '함께하면 좋은 활동'] },
+  REUNION: { icon: '🌙', name: () => '재회운', go: ['marriage', 'reunion'],
+          preview: ['다시 이어지는 관계의 조건', '관계에서 반복되기 쉬운 패턴', '앞으로 3년 재회의 흐름', '마음 정리 가이드 5단계'] },
+  FAMILY: { icon: '🏡', name: () => '가족운', go: ['family'],
+          preview: ['어린 시절 (년주)', '부모 · 형제 자리 심화', '형제 · 동료의 기운', '자녀 자리 (시주)', '가족과 건강한 거리 두기', '앞으로 3년 가족의 흐름'] },
+};
+const REPORT_CODES = ['YEAR', 'CAREER', 'MARRIAGE', 'COMPAT', 'REUNION', 'FAMILY'];
+
+/** 리포트가 있는 화면으로 이동 */
+function goReport(code) {
+  const [tab, love] = REPORT_INFO[code].go;
+  if (love) state.loveView = love;
+  showTab(tab);
+  setTimeout(() => document.querySelector(`[data-premium="${code}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
+}
+document.addEventListener('click', e => {
+  const g = e.target.closest('[data-goreport]');
+  if (g) goReport(g.dataset.goreport);
+});
+
+function buyButtons(p, code) {
+  const one = product(code), bundle = product('BUNDLE');
+  const bundleUseful = REPORT_CODES.some(c => !owns(p, c));
+  return `
+    <button class="btn btn-primary" data-buy="${code}">${one ? won(one.price) : ''} · 심화 리포트 열기</button>
+    ${bundleUseful && bundle ? `<button class="btn btn-ghost" data-buy="BUNDLE">전체 6종 ${won(bundle.price)}</button>` : ''}`;
+}
+
+/** 각 탭 아래에 붙는 심화 리포트 자리 */
+function premiumSlot(code) {
+  return `<div class="premium" data-premium="${code}"></div>`;
+}
+
+async function mountPremium(root, p, code, partner) {
+  const el = root.querySelector(`[data-premium="${code}"]`);
+  if (!el) return;
+  const info = REPORT_INFO[code], pr = product(code);
+  if (!owns(p, code)) {
+    el.innerHTML = `
+      <article class="card premium-card locked">
+        <div class="premium-head">
+          <span class="eyebrow">✦ 프리미엄 심화 리포트</span>
+          <h2>${info.icon} ${esc(p.name)} 님의 ${info.name()} 심화 리포트</h2>
+          <p class="lead">위의 기본 풀이보다 <b>3배 이상</b> 자세한 내용이 준비돼 있어요.${pr ? ' ' + esc(pr.includes) + '.' : ''}</p>
+        </div>
+        <ol class="premium-toc">${info.preview.map((t, i) => `<li><span>${String(i + 1).padStart(2, '0')}</span>${esc(t)}<em>🔒</em></li>`).join('')}</ol>
+        <div class="premium-blur" aria-hidden="true">
+          <p>${esc(p.name)} 님의 사주로 계산한 내용이 이곳에 펼쳐져요. 구매하면 이 프로필로 언제든 다시 볼 수 있어요. ${'✦ '.repeat(40)}</p>
+          <p>${'별의 이야기가 이어집니다. '.repeat(10)}</p>
+        </div>
+        <div class="premium-cta">
+          <div class="lock-actions">${buyButtons(p, code)}</div>
+          <span class="notice">한 번 구매하면 이 사주 프로필로 계속 볼 수 있어요.</span>
+        </div>
+      </article>`;
+    return;
+  }
+  el.innerHTML = `<article class="card premium-card"><p class="notice">심화 리포트를 불러오는 중이에요…</p></article>`;
+  try {
+    const q = partner ? '?partnerId=' + encodeURIComponent(partner) : '';
+    const r = await request(`/api/profiles/${p.id}/premium/${code}${q}`);
+    el.innerHTML = `
+      <article class="card premium-card">
+        <div class="premium-head">
+          <div class="crumb-row"><span class="eyebrow">✦ 프리미엄 심화 리포트</span><span class="tag open">✓ 구매 완료</span></div>
+          <h2>${info.icon} ${esc(r.title)}</h2>
+          <p class="lead">${esc(r.subtitle)}</p>
+        </div>
+        ${reportHtml(r)}
+      </article>`;
+  } catch (err) {
+    el.innerHTML = `<article class="card premium-card"><p class="notice">심화 리포트를 불러오지 못했어요. (${esc(err.message)})</p></article>`;
+  }
+}
+
+/** 내 결과 하단: 심화 리포트 6종 카드 */
+function paidSection(p) {
+  const bundle = product('BUNDLE');
+  const singleSum = REPORT_CODES.reduce((n, c) => n + (product(c)?.price || 0), 0);
+  const all = REPORT_CODES.every(c => owns(p, c));
+  const rec = p.saju.concern?.product;
+  const cards = REPORT_CODES.map(code => {
+    const info = REPORT_INFO[code], pr = product(code), open = owns(p, code);
+    return `
+      <div class="card paid-card ${code === rec ? 'rec' : ''}">
+        <span class="ch">${info.icon} ${code === rec ? '<b>내 고민 맞춤 추천</b>' : '심화 리포트'}</span>
+        <h3>${info.name()}</h3>
+        <p>${pr ? esc(pr.includes) : ''}</p>
+        <div class="foot">
+          ${open ? '<span class="tag open">✓ 구매 완료</span>' : `<span class="price">${pr ? won(pr.price) : ''}</span>`}
+          ${open ? `<button class="btn btn-ghost btn-sm" data-goreport="${code}">리포트 보기 ↗</button>`
+                 : `<button class="btn btn-primary btn-sm" data-buy="${code}">구매하기</button>`}
+        </div>
+      </div>`;
+  }).join('');
+  return `
+    <div class="intro" style="margin-top:8px">
+      <span class="eyebrow">프리미엄 심화 리포트</span>
+      <h2 class="section-title">더 깊이 읽어보고 싶다면</h2>
+      <p class="lead">각 탭의 기본 풀이는 무료예요. 심화 리포트는 같은 사주로 3배 이상 자세하게 풀어드려요.</p>
+    </div>
+    <div class="paid-grid">${cards}</div>
+    ${!all && bundle ? `<div class="bundle-bar">
+      <div><h3>심화 리포트 전체 6종 한 번에</h3>
+        <span class="save">따로 사면 ${won(singleSum)} → 묶음 ${won(bundle.price)} (${won(singleSum - bundle.price)} 할인)</span></div>
+      <button class="btn btn-primary" data-buy="BUNDLE">전체 6종 구매 ↗</button>
+    </div>` : ''}`;
+}
+
+/* ════════════════════════════════════════════
+   결제 (토스 테스트 결제창 · 모의 결제)
+   ════════════════════════════════════════════ */
+const payModal = document.getElementById('pay');
+let payConfig = { mode: 'mock' };
+
+async function loadPayConfig() {
+  try { payConfig = await request('/api/payments/config'); } catch { payConfig = { mode: 'mock' }; }
+}
+
+function loadTossSdk() {
+  if (window.TossPayments) return Promise.resolve();
+  return new Promise((ok, fail) => {
+    const s = document.createElement('script');
+    s.src = 'https://js.tosspayments.com/v2/standard';
+    s.onload = ok;
+    s.onerror = () => fail(new Error('토스 결제창을 불러오지 못했어요. 인터넷 연결을 확인해주세요.'));
+    document.head.appendChild(s);
+  });
+}
+
+function openPay(code) {
+  const p = current(), pr = product(code);
+  if (!p || !pr) return toast('먼저 사주를 선택해주세요');
+  state.payFor = { profileId: p.id, code };
+  const already = pr.unlocks.filter(c => owns(p, c));
+  document.getElementById('pay-title').textContent = pr.title;
+  document.getElementById('pay-body').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="pay-row"><span class="k">상품</span><span>${esc(pr.title)}</span></div>
+      <div class="pay-row"><span class="k">구성</span><span>${esc(pr.includes)}</span></div>
+      <div class="pay-row"><span class="k">대상 사주</span><span>${esc(p.name)} · ${esc(p.birthDate.replaceAll('-', '.'))}</span></div>
+      ${already.length ? `<p class="notice">이미 구매한 리포트(${already.map(c => REPORT_INFO[c].name()).join(', ')})가 포함돼 있어요.</p>` : ''}
+      <div class="pay-total"><span class="k">결제 금액</span><b>${won(pr.price)}</b></div>
+    </div>`;
+  document.getElementById('pay-note').innerHTML = payConfig.mode === 'toss'
+    ? `💳 <b>토스페이먼츠 ${payConfig.testMode ? '테스트 ' : ''}결제창</b>으로 이동해요.${payConfig.testMode ? ' 테스트 결제라 실제로 돈이 나가지 않아요.' : ''}`
+    : '🧪 <b>모의 결제</b>예요. 실제 결제는 이루어지지 않고, 구매 기록만 저장돼서 리포트가 열려요.';
+  document.getElementById('pay-agree').checked = false;
+  document.getElementById('pay-error').textContent = '';
+  document.getElementById('pay-confirm').textContent = `${won(pr.price)} 결제하기`;
+  payModal.classList.add('open');
+}
+function closePay() { payModal.classList.remove('open'); state.payFor = null; }
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-buy]');
+  if (b) openPay(b.dataset.buy);
+});
+document.getElementById('pay-close').onclick = closePay;
+document.getElementById('pay-cancel').onclick = closePay;
+payModal.addEventListener('click', e => { if (e.target === payModal) closePay(); });
+
+/** 구매 후 돌아갈 화면 */
+function returnPlace() {
+  const tab = document.querySelector('.tab[aria-selected="true"]')?.dataset.tab || 'result';
+  return { tab, love: state.loveView, partner: state.partnerId };
+}
+
+async function afterPurchase(code, place) {
+  await Promise.all([loadProfiles(), loadShop()]);
+  if (place) { state.loveView = place.love || state.loveView; state.partnerId = place.partner || state.partnerId; }
+  if (code === 'BUNDLE' || !REPORT_INFO[code]) showTab(place?.tab || 'result');
+  else goReport(code);
+  toast('구매가 완료됐어요. 심화 리포트가 열렸어요 ✨');
+}
+
+document.getElementById('pay-confirm').onclick = async () => {
+  const err = document.getElementById('pay-error');
+  if (!document.getElementById('pay-agree').checked) { err.textContent = '구매 내용 확인에 동의해주세요.'; return; }
+  const btn = document.getElementById('pay-confirm');
+  btn.disabled = true;
+  const { profileId, code } = state.payFor;
+  try {
+    if (payConfig.mode === 'toss') {
+      // 1) 서버가 주문번호 · 금액을 정해서 저장  2) 그 값으로 토스 결제창 띄우기
+      const order = await request('/api/payments/orders', { method: 'POST', body: JSON.stringify({ profileId, productCode: code, agree: true }) });
+      await loadTossSdk();
+      try { sessionStorage.setItem('saju.payReturn', JSON.stringify({ ...returnPlace(), code, profileId })); } catch {}
+      const base = location.origin + location.pathname;
+      const payment = TossPayments(order.clientKey).payment({ customerKey: order.customerKey });
+      await payment.requestPayment({
+        method: 'CARD',
+        amount: { currency: 'KRW', value: order.amount },
+        orderId: order.orderId,
+        orderName: order.orderName,
+        successUrl: base + '?pay=success',
+        failUrl: base + '?pay=fail',
+      });
+      // 결제창에서 결제하면 successUrl 로 페이지가 바뀌므로 여기까지 오지 않음
+    } else {
+      await request('/api/purchases', { method: 'POST', body: JSON.stringify({ profileId, productCode: code, agree: true }) });
+      const place = returnPlace();
+      closePay();
+      await afterPurchase(code, place);
+    }
+  } catch (e2) {
+    // 사용자가 결제창을 닫으면 USER_CANCEL 오류가 온다
+    err.textContent = e2.code === 'USER_CANCEL' ? '결제를 취소했어요.' : e2.message;
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+/** 토스 결제창에서 돌아왔을 때: ?pay=success&paymentKey=..&orderId=..&amount=.. */
+async function handlePayReturn() {
+  const q = new URLSearchParams(location.search);
+  const pay = q.get('pay');
+  if (!pay) return null;
+  let back = null;
+  try { back = JSON.parse(sessionStorage.getItem('saju.payReturn') || 'null'); sessionStorage.removeItem('saju.payReturn'); } catch {}
+  history.replaceState(null, '', location.pathname);
+  if (back?.profileId) setCurrent(back.profileId);
+  if (pay === 'fail') {
+    toast(q.get('code') === 'PAY_PROCESS_CANCELED' ? '결제를 취소했어요' : (q.get('message') || '결제에 실패했어요'));
+    return back;
+  }
+  try {
+    await request('/api/payments/confirm', { method: 'POST', body: JSON.stringify({
+      paymentKey: q.get('paymentKey'), orderId: q.get('orderId'), amount: Number(q.get('amount')) }) });
+    await afterPurchase(back?.code, back);
+    return { done: true };
+  } catch (e) {
+    toast('결제 승인에 실패했어요: ' + e.message);
+    return back;
+  }
+}
+
+/* ════════════════════════════════════════════
+   구매 내역 (하단 링크로 여는 창 · 취소 없음)
+   ════════════════════════════════════════════ */
+const buysModal = document.getElementById('buys');
+async function openPurchases() {
+  try { await loadShop(); } catch {}
+  const box = document.getElementById('buys-list');
+  if (!state.purchases.length) {
+    box.innerHTML = `<p class="notice">아직 구매한 리포트가 없어요.</p>`;
+  } else {
+    const total = state.purchases.reduce((n, x) => n + x.price, 0);
+    box.innerHTML = `<p class="notice">모두 <b>${state.purchases.length}건</b> · 합계 <b>${won(total)}</b></p>` +
+      state.purchases.map(x => {
+        const p = state.profiles.find(y => String(y.id) === String(x.profileId));
+        const d = new Date(x.createdAt);
+        return `<div class="buy-row">
+          <div><b>${esc(x.title)}</b> <span class="tag">${esc(p ? p.name : '삭제된 프로필')}</span>
+          <div class="meta">${fmtDate(d)} ${fmtTime(d)} · ${won(x.price)}</div></div>
+          ${p && REPORT_INFO[x.unlocks[0]] ? `<button class="btn btn-ghost btn-sm" data-popen="${x.profileId}" data-code="${x.productCode === 'BUNDLE' ? 'YEAR' : x.productCode}">열기 ↗</button>` : ''}
+        </div>`;
+      }).join('');
+  }
+  buysModal.classList.add('open');
+}
+function closePurchases() { buysModal.classList.remove('open'); }
+document.getElementById('buys-close').onclick = closePurchases;
+buysModal.addEventListener('click', e => {
+  if (e.target === buysModal) return closePurchases();
+  const o = e.target.closest('[data-popen]');
+  if (o) { closePurchases(); setCurrent(o.dataset.popen); goReport(o.dataset.code); }
+});
+document.addEventListener('click', e => { if (e.target.closest('[data-buys]')) { e.preventDefault(); openPurchases(); } });
+
+/* ════════════════════════════════════════════
+   탭 6. 사랑운 (결혼운 · 궁합 · 재회운)
+   ════════════════════════════════════════════ */
+/* ── 사랑운 일러스트 (직접 그린 SVG) ── */
+const ART = {
+  rings: () => `<svg class="art" viewBox="0 0 220 140" aria-hidden="true">
+    <defs><linearGradient id="rg1" x1="0" x2="1"><stop offset="0" stop-color="#ffd27a"/><stop offset="1" stop-color="#ff70cf"/></linearGradient>
+      <linearGradient id="rg2" x1="0" x2="1"><stop offset="0" stop-color="#ff70cf"/><stop offset="1" stop-color="#b98cff"/></linearGradient>
+      <filter id="gl"><feGaussianBlur stdDeviation="3"/></filter></defs>
+    <circle cx="88" cy="78" r="38" fill="none" stroke="url(#rg1)" stroke-width="9" filter="url(#gl)" opacity=".5"/>
+    <circle cx="132" cy="78" r="38" fill="none" stroke="url(#rg2)" stroke-width="9" filter="url(#gl)" opacity=".5"/>
+    <circle cx="88" cy="78" r="38" fill="none" stroke="url(#rg1)" stroke-width="7"/>
+    <circle cx="132" cy="78" r="38" fill="none" stroke="url(#rg2)" stroke-width="7"/>
+    <path d="M88 40 l6 -12 l6 12 z" fill="#fff" opacity=".9"/><circle cx="94" cy="26" r="3" fill="#fff"/>
+    ${[[30, 30, 3], [190, 36, 2.5], [200, 110, 2], [22, 112, 2.2], [110, 18, 1.8]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" opacity=".8"><animate attributeName="opacity" values=".2;1;.2" dur="${2 + r}s" repeatCount="indefinite"/></circle>`).join('')}
+  </svg>`,
+  moon: () => `<svg class="art" viewBox="0 0 220 140" aria-hidden="true">
+    <defs><radialGradient id="mg" cx=".4" cy=".4"><stop offset="0" stop-color="#fff6d8"/><stop offset="1" stop-color="#f4c56a"/></radialGradient>
+      <filter id="mgl"><feGaussianBlur stdDeviation="6"/></filter></defs>
+    <circle cx="110" cy="62" r="34" fill="#f4c56a" filter="url(#mgl)" opacity=".45"/>
+    <path d="M128 32 a34 34 0 1 0 0 60 a27 27 0 1 1 0 -60 z" fill="url(#mg)"/>
+    <path d="M38 104 C 70 70, 150 140, 182 98" fill="none" stroke="#ff5a7a" stroke-width="2.5" stroke-dasharray="6 6" stroke-linecap="round">
+      <animate attributeName="stroke-dashoffset" values="0;-24" dur="2s" repeatCount="indefinite"/></path>
+    <path d="M38 92 l3 8 l8 1 l-6 5 l2 8 l-7 -4 l-7 4 l2 -8 l-6 -5 l8 -1 z" fill="#ff9bd8"/>
+    <path d="M182 86 l3 8 l8 1 l-6 5 l2 8 l-7 -4 l-7 4 l2 -8 l-6 -5 l8 -1 z" fill="#b98cff"/>
+    ${[[20, 26, 2], [200, 24, 2.4], [160, 128, 1.8], [64, 20, 1.6]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" opacity=".7"><animate attributeName="opacity" values=".2;1;.2" dur="${2 + r}s" repeatCount="indefinite"/></circle>`).join('')}
+  </svg>`,
+  heart: () => `<svg class="art-heart" viewBox="0 0 60 54" aria-hidden="true">
+    <defs><linearGradient id="hg" x1="0" x2="1"><stop offset="0" stop-color="#ff70cf"/><stop offset="1" stop-color="#ff9a7a"/></linearGradient></defs>
+    <path d="M30 50 C 8 34, 2 22, 8 12 C 14 2, 26 4, 30 14 C 34 4, 46 2, 52 12 C 58 22, 52 34, 30 50 z" fill="url(#hg)">
+      <animateTransform attributeName="transform" type="scale" values="1;1.08;1" dur="1.4s" repeatCount="indefinite" additive="sum"/></path>
+  </svg>`,
+};
+
+/** 궁합 상단: 두 사람의 오행 캐릭터 + 하트 */
+function compatHero(me, partner, score) {
+  const a = EL[me.saju.core.dayMasterElement], b = EL[partner.saju.core.dayMasterElement];
+  const who = (p, e) => `<div class="cp-who"><span class="cp-ava" style="border-color:${e.color}"><img src="${e.img}" alt="${e.char}"></span>
+      <b>${esc(p.name)}</b><small>${p.saju.core.dayMaster}${e.ko} · ${e.char.split(' ').pop()}</small></div>`;
+  return `<div class="cp-hero">${who(me, a)}<div class="cp-mid">${ART.heart()}<span class="cp-score">${score}<small>점</small></span></div>${who(partner, b)}</div>`;
+}
+
+function renderLove() {
+  const wrap = document.getElementById('marriage-root');
+  const views = [['compat', '💞 궁합'], ['reunion', '🌙 재회운'], ['marriage', '💍 결혼운']];
+  wrap.innerHTML = `<div class="sub-tabs love-tabs" role="tablist">${views.map(([k, l]) =>
+    `<button type="button" data-love="${k}" aria-selected="${state.loveView === k}">${l}</button>`).join('')}</div>
+    <div id="love-body" style="margin-top:28px"></div>`;
+  ({ marriage: renderMarriage, compat: renderCompat, reunion: renderReunion })[state.loveView]();
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-love]');
+  if (b) { state.loveView = b.dataset.love; writeStore('saju.loveView', state.loveView); history.replaceState(null, '', '#love-' + state.loveView); renderLove(); }
+});
+
+function simpleFrame(p, o) {
+  return `
+  <div style="display:flex;flex-direction:column;gap:28px">
+    <div class="crumb-row"><span class="crumb">내 사주 / ${esc(p.name)} / ${o.crumb}</span><span class="tag">${o.tag}</span></div>
+    <div class="intro">
+      <span class="eyebrow">${o.eyebrow}</span>
+      <h1 class="title">${o.title}</h1>
+      <p class="lead">${o.lead}</p>
+    </div>
+    <article class="card reading-main">${o.main}
+      <p class="notice">풀이는 자기 성찰을 위한 참고예요. 중요한 결정은 현실의 정보와 함께 판단해주세요.</p>
+    </article>
+    ${premiumSlot(o.code)}
+  </div>`;
+}
+
+async function renderCompat() {
+  const root = document.getElementById('love-body');
+  const p = current();
+  if (!p) { root.innerHTML = emptyTopic('💞', '궁합'); return; }
+  const others = state.profiles.filter(x => String(x.id) !== String(p.id));
+  if (!others.length) {
+    root.innerHTML = `<div class="card empty-state"><span class="big">💞</span><h3>궁합을 볼 상대의 사주가 필요해요</h3>
+      <p>연인, 친구, 가족의 출생 정보를 하나 더 저장하면 ${esc(p.name)} 님과의 궁합을 볼 수 있어요.</p>
+      <button class="btn btn-primary" data-go="input">상대 사주 추가하기 ↗</button></div>`;
+    return;
+  }
+  if (!others.some(x => String(x.id) === String(state.partnerId))) state.partnerId = String(others[0].id);
+  const select = `<label class="partner-pick">궁합을 볼 상대
+      <select class="input" id="partner-select">${others.map(x =>
+        `<option value="${x.id}" ${String(x.id) === String(state.partnerId) ? 'selected' : ''}>${esc(x.name)} · ${esc(x.birthDate.replaceAll('-', '.'))}</option>`).join('')}</select></label>`;
+  root.innerHTML = simpleFrame(p, { code: 'COMPAT', crumb: '궁합', tag: '💞 궁합',
+    eyebrow: '사랑운 · 두 사람의 기운', title: `${esc(p.name)} 님의 궁합`,
+    lead: '두 사람의 일간(나를 나타내는 글자)과 일지(배우자 자리), 오행 균형을 비교해 관계의 결을 읽어요.',
+    main: `${select}<div id="compat-basic"><p class="notice">궁합을 계산하는 중이에요…</p></div>` });
+  root.querySelector('#partner-select').onchange = e => { state.partnerId = e.target.value; renderCompat(); };
+  try {
+    const r = await request(`/api/profiles/${p.id}/compat?partnerId=${state.partnerId}`);
+    const score = parseInt(r.subtitle, 10);
+    const partner = state.profiles.find(x => String(x.id) === String(state.partnerId));
+    root.querySelector('#compat-basic').innerHTML = `
+      ${compatHero(p, partner, score)}
+      <p class="cp-grade">${esc(r.subtitle.replace(/^\d+점 · /, ''))}</p>
+      ${reportHtml(r)}`;
+  } catch (err) {
+    root.querySelector('#compat-basic').innerHTML = `<p class="notice">궁합을 불러오지 못했어요. (${esc(err.message)})</p>`;
+  }
+  mountPremium(root, p, 'COMPAT', state.partnerId);
+}
+
+function renderReunion() {
+  const root = document.getElementById('love-body');
+  const p = current();
+  if (!p) { root.innerHTML = emptyTopic('🌙', '재회운'); return; }
+  root.innerHTML = simpleFrame(p, { code: 'REUNION', crumb: '재회운', tag: '🌙 재회운',
+    eyebrow: '사랑운 · 다시 이어지는 인연', title: `${esc(p.name)} 님의 재회운`,
+    lead: '이별을 대하는 나의 방식(일간)과 올해의 기운으로, 지나간 인연을 어떻게 바라보면 좋을지 읽어요.',
+    main: `<div class="topic-hero reunion-hero art-hero">${ART.moon()}
+        <span><span class="lbl">끊어진 듯 이어진</span><br><span class="val">붉은 실의 인연</span></span></div>` + reportHtml(p.saju.reunion) });
+  mountPremium(root, p, 'REUNION');
+}
+
+/* ════════════════════════════════════════════
+   탭 7. 가족운
+   ════════════════════════════════════════════ */
+function renderFamily() {
+  const root = document.getElementById('family-root');
+  const p = current();
+  if (!p) { root.innerHTML = emptyTopic('🏡', '가족운'); return; }
+  root.innerHTML = simpleFrame(p, { code: 'FAMILY', crumb: '가족운', tag: '🏡 가족운',
+    eyebrow: '가족운 · 년주 · 월주 · 시주', title: `${esc(p.name)} 님의 가족운`,
+    lead: '사주의 기둥마다 가족의 자리가 있어요. 년주는 어린 시절, 월주는 부모 · 형제, 시주는 자녀를 나타내요.',
+    main: reportHtml(p.saju.family) });
+  mountPremium(root, p, 'FAMILY');
+}
+
+/* ════════════════════════════════════════════
+   탭 5. 내 사주 목록
+   ════════════════════════════════════════════ */
+function renderList() {
+  const list = document.getElementById('profile-list');
+  document.getElementById('profile-count').textContent = state.profiles.length;
+
+  if (!state.profiles.length) {
+    list.innerHTML = emptyState('🐰', '저장된 사주가 없어요', '첫 번째 사주 프로필을 만들어보세요.');
+    return;
+  }
+
+  list.innerHTML = state.profiles.map(p => `
+    <article class="card profile-card ${String(p.id) === String(state.currentId) ? 'current' : ''}">
+      <div class="pc-head">
+        <div class="pc-name">${avatar(p.saju.core.dayMasterElement, 'lg')}<b>${esc(p.name)}</b>
+          ${String(p.id) === String(state.currentId) ? '<span class="tag">보고 있는 사주</span>' : ''}</div>
+        <div class="pc-manage">
+          <button data-edit="${p.id}">✎ 정보 수정</button>
+          <button class="del" data-del="${p.id}">🗑 프로필 삭제</button>
+        </div>
+      </div>
+      <div class="pc-info">
+        <div><div class="k">생년월일</div><div class="v">${p.birthDate.replaceAll('-', '.')} (양력)</div></div>
+        <div><div class="k">태어난 시간</div><div class="v">${p.birthTime ? p.birthTime.slice(0, 5) : '모름'}</div></div>
+        <div><div class="k">출생 지역</div><div class="v">${esc(p.birthPlace || '-')}</div></div>
+        <div><div class="k">성별</div><div class="v">${p.gender === 'F' ? '여성' : '남성'}</div></div>
+      </div>
+      <div class="pc-foot">
+        <div class="pc-status">✓ 사주 결과 열람 가능
+          <small>무료: 사주팔자 · 오행 균형 · 핵심 성향 · 유료 ${p.saju.owned.length}/3 열림</small></div>
+        <button class="btn btn-ghost" data-open="${p.id}">결과 보기 ↗</button>
+      </div>
+    </article>`).join('');
+}
+
+document.getElementById('profile-list').addEventListener('click', e => {
+  const open = e.target.closest('[data-open]');
+  if (open) { setCurrent(open.dataset.open); showTab('result'); return; }
+  const del = e.target.closest('[data-del]');
+  if (del) openDeleteModal(del.dataset.del);
+});
+
+// 정보 수정 (목록 · 결과 화면 공통)
+document.addEventListener('click', e => {
+  const edit = e.target.closest('[data-edit]');
+  if (!edit) return;
+  const p = state.profiles.find(x => String(x.id) === edit.dataset.edit);
+  if (p) { fillForm(p); showTab('input'); }
+});
+
+/* ════════════════════════════════════════════
+   성찰 질문 카드 (내 결과 · 올해 운세)
+   ════════════════════════════════════════════ */
+async function mountReflect(el, p, type) {
+  if (!el) return;
+  const key = type + ':' + p.id;
+  const offset = state.qOffset[key] || 0;
+  const label = { year: `✦ ${p.saju.year.year}년 성찰 질문`, career: '✦ 일에 대한 성찰 질문',
+                  marriage: '✦ 관계에 대한 성찰 질문' }[type] || '✦ 오늘의 성찰 질문';
+  const draft = state.drafts[key] || '';
+
+  if (!el.dataset.ready) {
+    el.innerHTML = `
+      <div class="reflect-head">
+        <span class="eyebrow">${label}</span>
+        <button type="button" class="link" data-next title="다른 질문 보기">다른 질문 ↻</button>
+      </div>
+      <p class="q fade">질문을 불러오는 중이에요…</p>
+      <textarea class="input reflect-input" maxlength="1000" rows="4"
+        placeholder="떠오르는 대로 적어보세요. 정답은 없어요."></textarea>
+      <div class="reflect-foot">
+        <span class="char-count">0 / 1000</span>
+        <button type="button" class="btn btn-primary btn-sm" data-save disabled>성찰 일기에 저장</button>
+      </div>
+      <p class="reflect-saved"></p>`;
+    el.dataset.ready = '1';
+
+    const ta = el.querySelector('textarea'), save = el.querySelector('[data-save]'), cnt = el.querySelector('.char-count');
+    const sync = () => {
+      state.drafts[key] = ta.value;
+      cnt.textContent = `${ta.value.length} / 1000`;
+      save.disabled = !ta.value.trim();
+    };
+    ta.value = draft; sync();
+    ta.addEventListener('input', sync);
+
+    el.querySelector('[data-next]').addEventListener('click', () => {
+      state.qOffset[key] = (state.qOffset[key] || 0) + 1;
+      loadQuestion(el, p, type);
+    });
+
+    save.addEventListener('click', async () => {
+      const answer = ta.value.trim();
+      if (!answer || !el.dataset.code) return;
+      save.disabled = true;
+      try {
+        await request(REFLECT_API, { method: 'POST', body: JSON.stringify({
+          profileId: p.id, type, questionCode: el.dataset.code, answer }) });
+        ta.value = ''; sync();
+        await loadReflections();
+        updateSavedLine(el, p);
+        toast('성찰 일기에 저장했어요');
+      } catch (err) {
+        toast(err.message); save.disabled = false;
+      }
+    });
+  }
+  updateSavedLine(el, p);
+  loadQuestion(el, p, type);
+}
+
+async function loadQuestion(el, p, type) {
+  const key = type + ':' + p.id;
+  const q = el.querySelector('.q');
+  q.classList.add('fade');
+  try {
+    const data = await request(`${REFLECT_API}/question?profileId=${p.id}&type=${type}&offset=${state.qOffset[key] || 0}`);
+    if (!el.isConnected) return;
+    el.dataset.code = data.code;
+    q.textContent = data.text;
+  } catch (err) {
+    console.error('[성찰 질문]', err);
+    q.innerHTML = `질문을 불러오지 못했어요. <button type="button" class="link" data-retry>다시 불러오기 ↻</button>
+      <span class="notice" style="display:block;margin-top:6px">(${esc(err.message)})</span>`;
+    q.querySelector('[data-retry]').onclick = () => loadQuestion(el, p, type);
+  } finally {
+    q.classList.remove('fade');
+  }
+}
+
+function updateSavedLine(el, p) {
+  const n = state.reflections.filter(r => String(r.profileId) === String(p.id)).length;
+  el.querySelector('.reflect-saved').innerHTML = n
+    ? `${esc(p.name)} 님의 성찰 일기 <b style="color:var(--accent)">${n}개</b> · <button type="button" class="link" data-journal-of="${p.id}">모아보기 ↗</button>`
+    : '적은 답은 내 사주 목록 › 성찰 일기에 모여요.';
+}
+
+document.addEventListener('click', e => {
+  const j = e.target.closest('[data-journal-of]');
+  if (!j) return;
+  state.journalFilter = j.dataset.journalOf;
+  state.listView = 'journal';
+  showTab('list');
+});
+
+/* ════════════════════════════════════════════
+   내 사주 목록 › 성찰 일기
+   ════════════════════════════════════════════ */
+const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
+const fmtDate = d => `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} (${WEEK[d.getDay()]})`;
+const fmtTime = d => `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+
+function applyListView() {
+  const v = state.listView;
+  document.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-selected', b.dataset.view === v));
+  document.getElementById('view-profiles').classList.toggle('on', v === 'profiles');
+  document.getElementById('view-journal').classList.toggle('on', v === 'journal');
+  document.getElementById('list-title').textContent =
+    { journal: '나의 성찰 일기' }[v] || '저장한 사주 프로필';
+  document.getElementById('list-lead').textContent = {
+    journal: '성찰 질문에 적은 답을 모아봤어요. 지난 기록을 읽으며 달라진 나를 발견해보세요.',
+  }[v] || '나와 소중한 사람들의 사주를 저장하고, 언제든 다시 열어볼 수 있어요.';
+}
+
+document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => {
+  state.listView = b.dataset.view; applyListView();
+}));
+
+function renderJournal() {
+  document.getElementById('journal-count').textContent = state.reflections.length;
+  document.getElementById('practice-box').innerHTML = practiceCard();
+
+  // 프로필 필터
+  const sel = document.getElementById('journal-filter');
+  if (state.journalFilter && !state.profiles.some(p => String(p.id) === String(state.journalFilter))) state.journalFilter = '';
+  sel.innerHTML = '<option value="">전체 프로필</option>' + state.profiles.map(p =>
+    `<option value="${p.id}">${esc(p.name)} (${state.reflections.filter(r => String(r.profileId) === String(p.id)).length})</option>`).join('');
+  sel.value = state.journalFilter;
+
+  const list = state.reflections.filter(r => !state.journalFilter || String(r.profileId) === String(state.journalFilter));
+  const now = new Date();
+  const thisMonth = list.filter(r => { const d = new Date(r.createdAt); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth(); }).length;
+  document.getElementById('journal-stats').innerHTML = list.length
+    ? `모두 <b>${list.length}개</b>의 기록 · 이번 달 <b>${thisMonth}개</b>` : '';
+
+  const box = document.getElementById('journal-list');
+  if (!list.length) {
+    box.innerHTML = `<div class="card empty-state"><span class="big">✎</span>
+      <h3>아직 적은 성찰 일기가 없어요</h3>
+      <p>내 결과나 올해 운세 탭의 성찰 질문에 답을 적어보세요.</p>
+      <button class="btn btn-primary" data-go="result">성찰 질문 보러 가기 ↗</button></div>`;
+    return;
+  }
+
+  let month = '';
+  box.innerHTML = list.map(r => {
+    const d = new Date(r.createdAt);
+    const m = `${d.getFullYear()}년 ${d.getMonth() + 1}월`;
+    const monthHead = m !== month ? `<div class="j-month">${m}</div>` : '';
+    month = m;
+    const p = state.profiles.find(x => String(x.id) === String(r.profileId));
+    const editing = String(state.editingReflection) === String(r.id);
+    const confirming = String(state.confirmReflection) === String(r.id);
+    const edited = r.updatedAt && r.updatedAt.slice(0, 16) !== r.createdAt.slice(0, 16);
+    const typeLabel = { year: '올해 운세', career: '직장운', marriage: '결혼운' }[r.type] || '나의 결';
+    return `${monthHead}
+    <article class="card j-card" data-rid="${r.id}">
+      <div class="j-head">
+        <span class="j-date">${fmtDate(d)} ${fmtTime(d)}</span>
+        <span class="tag">${esc(p ? p.name : '삭제된 프로필')}</span>
+        <span class="j-type">${typeLabel}</span>
+      </div>
+      <p class="j-q">${esc(r.question)}</p>
+      ${editing
+        ? `<textarea class="input reflect-input" maxlength="1000" data-edit-area>${esc(r.answer)}</textarea>`
+        : `<p class="j-a">${esc(r.answer)}</p>`}
+      <div class="j-foot">
+        <span class="j-edited">${edited ? '수정됨 · ' + fmtDate(new Date(r.updatedAt)) : ''}</span>
+        ${editing ? `<div class="j-actions">
+            <button type="button" class="btn btn-primary btn-sm" data-jsave>저장</button>
+            <button type="button" class="btn btn-line btn-sm" data-jcancel>취소</button></div>`
+        : confirming ? `<div class="j-confirm">이 기록을 삭제할까요? 복구할 수 없어요.
+            <button type="button" class="btn btn-danger btn-sm" data-jdel-ok>삭제</button>
+            <button type="button" class="btn btn-line btn-sm" data-jcancel>취소</button></div>`
+        : `<div class="j-actions">
+            <button type="button" data-jedit>✎ 수정</button>
+            <button type="button" class="del" data-jdel>🗑 삭제</button></div>`}
+      </div>
+    </article>`;
+  }).join('');
+
+  const area = box.querySelector('[data-edit-area]');
+  if (area) { area.focus(); area.setSelectionRange(area.value.length, area.value.length); }
+}
+
+document.getElementById('journal-filter').addEventListener('change', e => {
+  state.journalFilter = e.target.value; renderJournal();
+});
+
+document.getElementById('journal-list').addEventListener('click', async e => {
+  const card = e.target.closest('[data-rid]');
+  if (!card) return;
+  const id = card.dataset.rid;
+  if (e.target.closest('[data-jedit]')) { state.editingReflection = id; state.confirmReflection = null; renderJournal(); return; }
+  if (e.target.closest('[data-jdel]')) { state.confirmReflection = id; state.editingReflection = null; renderJournal(); return; }
+  if (e.target.closest('[data-jcancel]')) { state.editingReflection = null; state.confirmReflection = null; renderJournal(); return; }
+
+  if (e.target.closest('[data-jsave]')) {
+    const answer = card.querySelector('[data-edit-area]').value.trim();
+    if (!answer) { toast('답을 한 글자 이상 적어주세요'); return; }
+    try {
+      await request(`${REFLECT_API}/${id}`, { method: 'PUT', body: JSON.stringify({ answer }) });
+      state.editingReflection = null;
+      await loadReflections(); renderJournal(); toast('성찰 일기를 수정했어요');
+    } catch (err) { toast(err.message); }
+    return;
+  }
+  if (e.target.closest('[data-jdel-ok]')) {
+    try {
+      await request(`${REFLECT_API}/${id}`, { method: 'DELETE' });
+      state.confirmReflection = null;
+      await loadReflections(); renderJournal(); toast('성찰 일기를 삭제했어요');
+    } catch (err) { toast(err.message); }
+  }
+});
+
+/* ════════════════════════════════════════════
+   삭제 모달
+   ════════════════════════════════════════════ */
+const modal = document.getElementById('modal');
+let deleteId = null;
+
+function openDeleteModal(id) {
+  const p = state.profiles.find(x => String(x.id) === String(id));
+  if (!p) return;
+  deleteId = id;
+  document.getElementById('modal-target').innerHTML =
+    `<b>${esc(p.name)}</b><span class="muted">${esc(birthText(p))}</span>`;
+  modal.classList.add('open');
+  document.getElementById('modal-cancel').focus();
+}
+function closeModal() { modal.classList.remove('open'); deleteId = null; }
+
+document.getElementById('modal-cancel').onclick = closeModal;
+modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (buysModal.classList.contains('open')) closePurchases();
+  else if (payModal.classList.contains('open')) closePay();
+  else if (guide.classList.contains('open')) closeGuide();
+  else if (modal.classList.contains('open')) closeModal();
+});
+
+/* ════════════════════════════════════════════
+   이용 안내 모달
+   ════════════════════════════════════════════ */
+const guide = document.getElementById('guide');
+function openGuide(section = 'guide') {
+  showGuideSection(section);
+  guide.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('guide-close').focus();
+}
+function closeGuide() { guide.classList.remove('open'); document.body.style.overflow = ''; }
+function showGuideSection(name) {
+  guide.querySelectorAll('[data-gtab]').forEach(b => b.setAttribute('aria-selected', b.dataset.gtab === name));
+  guide.querySelectorAll('[data-gsec]').forEach(s => s.classList.toggle('on', s.dataset.gsec === name));
+  guide.querySelector('.guide-body').scrollTop = 0;
+}
+document.addEventListener('click', e => {
+  const h = e.target.closest('[data-help]');
+  if (h) { openGuide(h.dataset.help); return; }
+  const g = e.target.closest('[data-gtab]');
+  if (g) showGuideSection(g.dataset.gtab);
+});
+document.getElementById('guide-close').onclick = closeGuide;
+guide.addEventListener('click', e => { if (e.target === guide) closeGuide(); });
+
+document.getElementById('modal-confirm').onclick = async () => {
+  const btn = document.getElementById('modal-confirm');
+  btn.disabled = true;
+  try {
+    await api('/' + deleteId, { method: 'DELETE' });
+    if (String(deleteId) === String(state.currentId)) setCurrent(null);
+    closeModal();
+    await Promise.all([loadProfiles(), loadReflections(), loadShop()]);
+    renderList();
+    renderJournal();
+    toast('프로필을 삭제했어요');
+  } catch (err) {
+    toast(err.message);
+  } finally {
+    btn.disabled = false;
+  }
+};
+
+/* ════════════════════════════════════════════
+   입력 폼 (추가 · 수정 공용)
+   ════════════════════════════════════════════ */
+const form = document.getElementById('profile-form');
+const $ = id => document.getElementById(id);
+
+/* 생년월일: 숫자만 입력해도 1994.08.17 처럼 점을 찍어준다 (달력 스크롤 대신 직접 입력) */
+$('f-date').addEventListener('input', e => {
+  const d = e.target.value.replace(/\D/g, '').slice(0, 8);
+  e.target.value = d.length > 6 ? `${d.slice(0, 4)}.${d.slice(4, 6)}.${d.slice(6)}` : d.length > 4 ? `${d.slice(0, 4)}.${d.slice(4)}` : d;
+});
+function dateValue() {
+  const d = $('f-date').value.replace(/\D/g, '');
+  return d.length === 8 ? `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}` : '';
+}
+function setCalendar(v) {
+  state.calendar = v;
+  $('f-cal').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.value === v));
+  $('f-leap-wrap').hidden = v !== 'LUNAR';
+  if (v !== 'LUNAR') $('f-leap').checked = false;
+  $('f-date-help').textContent = v === 'LUNAR' ? '음력 날짜를 입력하면 양력으로 바꿔서 계산해요' : '숫자 8자리만 입력해도 돼요 (19940817)';
+}
+$('f-cal').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setCalendar(b.dataset.value); });
+
+function setConcern(v) {
+  state.concern = state.concern === v ? null : v;
+  $('f-concern').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.value === state.concern));
+}
+$('f-concern').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setConcern(b.dataset.value); });
+$('f-concern-text').addEventListener('input', e => { $('f-concern-count').textContent = e.target.value.length; });
+
+/* 태어난 시간: 숫자만 입력해도 14:30 처럼 콜론을 찍어준다 */
+$('f-time').addEventListener('input', e => {
+  const d = e.target.value.replace(/\D/g, '').slice(0, 4);
+  e.target.value = d.length > 2 ? `${d.slice(0, 2)}:${d.slice(2)}` : d;
+});
+/** 오전/오후 + 12시간 입력 → 24시간 "HH:MM" (오전 12시 = 0시, 오후 12시 = 12시) */
+function timeValue() {
+  const d = $('f-time').value.replace(/\D/g, '');
+  if (d.length !== 4) return null;
+  let h = +d.slice(0, 2); const m = +d.slice(2);
+  if (h < 1 || h > 12 || m > 59) return null;
+  if (state.ampm === 'AM') h = h === 12 ? 0 : h;
+  else h = h === 12 ? 12 : h + 12;
+  return `${String(h).padStart(2, '0')}:${d.slice(2)}`;
+}
+function setAmpm(v) {
+  state.ampm = v;
+  $('f-ampm').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.value === v));
+}
+$('f-ampm').addEventListener('click', e => { const b = e.target.closest('button'); if (b && !$('f-time').disabled) setAmpm(b.dataset.value); });
+$('f-time-unknown').addEventListener('change', e => {
+  $('f-time').disabled = e.target.checked;
+  if (e.target.checked) $('f-time').value = '';
+});
+
+$('f-gender').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  setGender(b.dataset.value);
+});
+function setGender(v) {
+  state.gender = v;
+  $('f-gender').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.value === v));
+}
+
+function resetForm() {
+  state.editingId = null;
+  form.reset();
+  $('f-time').disabled = false;
+  setGender(null);
+  setCalendar('SOLAR');
+  setAmpm('AM');
+  state.concern = null; setConcern(null);
+  $('f-concern-count').textContent = 0;
+  $('form-error').textContent = '';
+  form.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
+  $('form-eyebrow').textContent = '사주 프로필 추가';
+  $('form-title').textContent = '태어난 순간을 알려주세요';
+  $('submit-btn').textContent = '사주 결과 보기 ↗';
+}
+
+function fillForm(p) {
+  resetForm();
+  state.editingId = p.id;
+  $('f-name').value = p.name;
+  setCalendar(p.calendar === 'LUNAR' ? 'LUNAR' : 'SOLAR');
+  $('f-date').value = (p.calendar === 'LUNAR' && p.lunarDate ? p.lunarDate : p.birthDate).replaceAll('-', '.');
+  $('f-leap').checked = !!p.leapMonth;
+  state.concern = null; if (p.concernType) setConcern(p.concernType);
+  $('f-concern-text').value = p.concernText || '';
+  $('f-concern-count').textContent = (p.concernText || '').length;
+  if (p.birthTime) {
+    const h = +p.birthTime.slice(0, 2), mm = p.birthTime.slice(3, 5);
+    setAmpm(h < 12 ? 'AM' : 'PM');
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    $('f-time').value = `${String(h12).padStart(2, '0')}:${mm}`;
+  } else $('f-time').value = '';
+  $('f-time-unknown').checked = !p.birthTime;
+  $('f-time').disabled = !p.birthTime;
+  $('f-place').value = p.birthPlace || '';
+  setGender(p.gender);
+  $('f-agree').checked = true;
+  $('form-eyebrow').textContent = '사주 정보 수정';
+  $('form-title').textContent = `${p.name} 님의 출생 정보 수정`;
+  $('submit-btn').textContent = '수정하고 다시 보기 ↗';
+}
+
+$('cancel-btn').onclick = () => { const wasEditing = state.editingId; resetForm(); showTab(wasEditing ? 'list' : 'home'); };
+
+form.addEventListener('submit', async e => {
+  e.preventDefault();
+  form.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
+
+  const fail = (msg, el) => { $('form-error').textContent = msg; if (el) { el.classList.add('invalid'); el.focus(); } };
+  const name = $('f-name').value.trim();
+  const date = dateValue();
+  const unknown = $('f-time-unknown').checked;
+  const time = timeValue();
+
+  if (!name) return fail('이름을 입력해주세요.', $('f-name'));
+  if (!$('f-date').value) return fail('생년월일을 입력해주세요.', $('f-date'));
+  if (!date) return fail('생년월일은 1994.08.17 처럼 8자리로 입력해주세요.', $('f-date'));
+  if (date < '1900-01-01') return fail('1900년 이후 생년월일만 계산할 수 있어요.', $('f-date'));
+  if (state.calendar === 'SOLAR') {
+    const [yy, mm, dd] = date.split('-').map(Number), dt = new Date(yy, mm - 1, dd);
+    if (dt.getMonth() !== mm - 1 || dt.getDate() !== dd) return fail('없는 날짜예요. 생년월일을 다시 확인해주세요.', $('f-date'));
+    if (dt > new Date()) return fail('생년월일은 오늘 이전이어야 해요.', $('f-date'));
+  }
+  if (!unknown && !$('f-time').value) return fail('태어난 시간을 입력하거나 "시간을 몰라요"를 선택해주세요.', $('f-time'));
+  if (!unknown && !time) return fail('태어난 시간은 1 ~ 12시 사이로, 02:30 처럼 입력해주세요.', $('f-time'));
+  if (!state.gender) return fail('성별을 선택해주세요.');
+  if (!$('f-agree').checked) return fail('출생 정보 이용에 동의해주세요.');
+  $('form-error').textContent = '';
+
+  const body = JSON.stringify({
+    name, birthDate: date,
+    calendar: state.calendar, leapMonth: state.calendar === 'LUNAR' && $('f-leap').checked,
+    concernType: state.concern || null,
+    concernText: $('f-concern-text').value.trim() || null,
+    birthTime: unknown ? null : time,
+    gender: state.gender,
+    birthPlace: $('f-place').value || null,
+  });
+
+  form.classList.add('loading');
+  try {
+    const editing = state.editingId;
+    const saved = editing
+      ? await api('/' + editing, { method: 'PUT', body })
+      : await api('', { method: 'POST', body });
+    await loadProfiles();
+    setCurrent(saved.id);
+    resetForm();
+    showTab('result');
+    toast(editing ? '정보를 수정하고 사주를 다시 계산했어요' : '사주를 저장했어요');
+  } catch (err) {
+    fail(err.message);
+  } finally {
+    form.classList.remove('loading');
+  }
+});
+
+/* ════════════════════════════════════════════
+   시작
+   ════════════════════════════════════════════ */
+(function stars() {
+  const box = document.getElementById('stars');
+  for (let i = 0; i < 60; i++) {
+    const s = document.createElement('i');
+    s.style.left = Math.random() * 100 + '%';
+    s.style.top = Math.random() * 100 + '%';
+    s.style.animationDelay = (Math.random() * 3) + 's';
+    box.appendChild(s);
+  }
+})();
+
+// 사주상 올해 (입춘 2/4 이전이면 작년)
+(function yearLabel() {
+  const now = new Date();
+  const beforeIpchun = now.getMonth() === 0 || (now.getMonth() === 1 && now.getDate() < 4);
+  const y = now.getFullYear() - (beforeIpchun ? 1 : 0);
+  document.querySelectorAll('.this-year').forEach(el => el.textContent = y + '년');
+})();
+
+(async function init() {
+  try { await Promise.all([loadProfiles(), loadReflections(), loadShop(), loadPayConfig()]); }
+  catch (err) { toast('서버에 연결하지 못했어요'); }
+  const back = await handlePayReturn();   // 토스 결제창에서 돌아온 경우
+  if (back?.done) return;
+  let start = back?.tab || location.hash.slice(1);
+  if (back?.love) state.loveView = back.love;
+  if (start === 'journal') { state.listView = start; start = 'list'; }
+  if (start.startsWith('love-')) { const v = start.slice(5); if (['marriage', 'compat', 'reunion'].includes(v)) state.loveView = v; start = 'marriage'; }
+  showTab(['home', 'input', 'result', 'year', 'career', 'marriage', 'family', 'list'].includes(start) ? start : 'home');
+})();
+</script>
+</body>
+</html>

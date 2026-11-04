@@ -1,0 +1,13 @@
+target/
+data/
+*.log
+.idea/
+*.iml
+.vscode/
+.DS_Store
+.env
+
+# 토스 키를 넣는 실행 설정 (올리지 않기)
+.vscode/launch.json
+.env
+toss.properties
