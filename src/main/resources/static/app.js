@@ -984,7 +984,7 @@ function openPay(code) {
   let partnerId = null, partnerName = '';
   if (code === 'COMPAT') {
     const onCompat = document.querySelector('.tab[aria-selected="true"]')?.dataset.tab === 'marriage' && state.loveView === 'compat';
-    const partner = state.profiles.find(x => String(x.id) === String(state.partnerId) && String(x.id) !== String(p.id));
+    const partner = (state.partners || []).find(x => String(x.id) === String(state.partnerId));
     if (!onCompat || !partner) { goReport('COMPAT'); toast('궁합을 볼 상대를 먼저 골라주세요'); return; }
     partnerId = partner.id; partnerName = partner.name;
   }
@@ -1127,7 +1127,7 @@ async function openPurchases() {
           : x.refundable ? `<span class="refund-ask" data-refund-box="${x.id}"><button class="refund-link" data-refund="${x.id}">환불 요청</button></span>`
           : '';
         return `<div class="buy-row ${refunded ? 'refunded' : ''}">
-          <div><b>${esc(x.title)}</b> <span class="tag">${esc(p ? p.name : '삭제된 프로필')}${x.partnerId ? ' ♥ ' + esc(state.profiles.find(y => String(y.id) === String(x.partnerId))?.name || '삭제된 프로필') : ''}</span>
+          <div><b>${esc(x.title)}</b> <span class="tag">${esc(p ? p.name : '삭제된 프로필')}${x.partnerId ? ' ♥ ' + esc(x.partnerName || '지운 상대') : ''}</span>
           <div class="meta">${fmtDate(d)} ${fmtTime(d)} · ${won(x.price)}${refunded ? ' · 환불됨' : x.opened ? ' · 열어봄' : ' · 아직 안 열어봄'}</div></div>
           <div class="acts">${openBtn}${refundUi}</div>
         </div>`;
@@ -1224,11 +1224,12 @@ const ART = {
 };
 
 /** 궁합 상단: 두 사람의 오행 캐릭터 + 하트 */
+/** 궁합 상단: 두 사람의 오행 캐릭터 + 하트. partner 는 궁합 상대(이름 · 일간 · 일간 오행) */
 function compatHero(me, partner, score) {
-  const a = EL[me.saju.core.dayMasterElement], b = EL[partner.saju.core.dayMasterElement];
-  const who = (p, e) => `<div class="cp-who"><span class="cp-ava" style="border-color:${e.color}"><img src="${e.img}" alt="${e.char}"></span>
-      <b>${esc(p.name)}</b><small>${p.saju.core.dayMaster}${e.ko} · ${e.char.split(' ').pop()}</small></div>`;
-  return `<div class="cp-hero">${who(me, a)}<div class="cp-mid">${ART.heart()}<span class="cp-score">${score}<small>점</small></span></div>${who(partner, b)}</div>`;
+  const a = EL[me.saju.core.dayMasterElement], b = EL[partner.dayMasterElement];
+  const who = (name, dm, e) => `<div class="cp-who"><span class="cp-ava" style="border-color:${e.color}"><img src="${e.img}" alt="${e.char}" data-emoji="${e.emoji}"></span>
+      <b>${esc(name)}</b><small>${esc(dm)}${e.ko} · ${e.char.split(' ').pop()}</small></div>`;
+  return `<div class="cp-hero">${who(me.name, me.saju.core.dayMaster, a)}<div class="cp-mid">${ART.heart()}<span class="cp-score">${score}<small>점</small></span></div>${who(partner.name, partner.dayMaster, b)}</div>`;
 }
 
 function renderLove() {
@@ -1264,35 +1265,114 @@ async function renderCompat() {
   const root = document.getElementById('love-body');
   const p = current();
   if (!p) { root.innerHTML = emptyTopic('💞', '궁합'); return; }
-  const others = state.profiles.filter(x => String(x.id) !== String(p.id));
-  if (!others.length) {
-    root.innerHTML = `<div class="card empty-state"><span class="big">💞</span><h3>궁합을 볼 상대의 사주가 필요해요</h3>
-      <p>연인, 친구, 가족의 출생 정보를 하나 더 저장하면 ${esc(p.name)} 님과의 궁합을 볼 수 있어요.</p>
-      <button class="btn btn-primary" data-go="input">상대 사주 추가하기 ↗</button></div>`;
-    return;
-  }
-  if (!others.some(x => String(x.id) === String(state.partnerId))) state.partnerId = String(others[0].id);
-  const select = `<label class="partner-pick">궁합을 볼 상대
-      <select class="input" id="partner-select">${others.map(x =>
-        `<option value="${x.id}" ${String(x.id) === String(state.partnerId) ? 'selected' : ''}>${esc(x.name)} · ${esc(x.birthDate.replaceAll('-', '.'))}${ownsCompat(p, x.id) ? ' · ✓ 심화 구매' : ''}</option>`).join('')}</select></label>`;
+  let partners = [];
+  try { partners = await request(`/api/profiles/${p.id}/partners`); } catch {}
+  state.partners = partners;
+  if (state.partnerId && !partners.some(x => String(x.id) === String(state.partnerId))) state.partnerId = null;
+  if (!state.partnerId && partners.length && !state.addingPartner) state.partnerId = String(partners[0].id);
+  const sel = partners.find(x => String(x.id) === String(state.partnerId));
+  const adding = state.addingPartner || !partners.length;
+  const open = sel && (sel.free || sel.unlocked);
+
+  const chips = partners.length ? `<div class="pt-chips" role="tablist" aria-label="궁합 상대">
+      ${partners.map(x => `<button type="button" class="pt-chip" data-partner-pick="${x.id}" aria-selected="${!adding && sel && sel.id === x.id}">
+        ${esc(x.name)}<small>${x.free ? '무료' : x.unlocked ? '✓ 열림' : '🔒'}</small></button>`).join('')}
+      <button type="button" class="pt-chip add" data-partner-add aria-selected="${adding}">＋ 상대 추가</button></div>` : '';
+
+  const form = `<form class="pt-form" id="pt-form" novalidate>
+      <p class="notice">${partners.length
+        ? '두 번째 상대부터는 <b>4,900원</b>으로 그 상대와의 궁합(기본 풀이 + 심화 리포트)을 열 수 있어요.'
+        : '궁합을 볼 상대의 출생 정보를 적어주세요. <b>첫 번째 상대는 무료</b>로 궁합을 볼 수 있어요.'}</p>
+      <div class="pt-grid">
+        <label>상대 이름 또는 별명<input class="input" id="pt-name" maxlength="20" placeholder="예) 민준" autocomplete="off"></label>
+        <label>생년월일 (8자리)<input class="input" id="pt-date" inputmode="numeric" maxlength="10" placeholder="예) 19950712" autocomplete="off"></label>
+        <label>달력<select class="input" id="pt-cal"><option value="SOLAR">양력</option><option value="LUNAR">음력</option></select></label>
+        <label>태어난 시간<input class="input" id="pt-time" type="time"></label>
+      </div>
+      <div class="pt-row">
+        <label class="check"><input type="checkbox" id="pt-leap"> 윤달</label>
+        <label class="check"><input type="checkbox" id="pt-time-unknown"> 시간 모름</label>
+        <span class="pt-gender" role="group" aria-label="성별"><button type="button" data-ptg="F" aria-pressed="false">여성</button><button type="button" data-ptg="M" aria-pressed="false">남성</button></span>
+      </div>
+      <p class="notice">상대의 정보는 궁합에만 쓰이고, 결제와 이어져 있어 나중에 수정할 수 없어요. 상대의 동의를 받고 입력해주세요.</p>
+      <p class="pay-error" id="pt-error" role="alert"></p>
+      <div class="pt-actions">${partners.length ? '<button type="button" class="btn btn-line" data-partner-cancel>취소</button>' : ''}
+        <button type="submit" class="btn btn-primary">${partners.length ? '상대 추가하기' : '무료 궁합 보기'}</button></div>
+    </form>`;
+
+  const locked = sel && !open ? `<div class="pt-locked">
+      <span class="big">🔒</span>
+      <h3>${esc(p.name)} 님과 ${esc(sel.name)} 님의 궁합</h3>
+      <p>첫 번째 상대 다음부터는 상대마다 궁합을 열어야 볼 수 있어요. 한 번 열면 기본 풀이와 심화 리포트를 모두 볼 수 있어요.</p>
+      <button class="btn btn-primary" data-buy="COMPAT">${won(product('COMPAT')?.price || 4900)} · 이 상대와의 궁합 열기</button>
+    </div>` : '';
+
   root.innerHTML = simpleFrame(p, { code: 'COMPAT', crumb: '궁합', tag: '💞 궁합',
     eyebrow: '사랑운 · 두 사람의 기운', title: `${esc(p.name)} 님의 궁합`,
     lead: '두 사람의 일간(나를 나타내는 글자)과 일지(배우자 자리), 오행 균형을 비교해 관계의 결을 읽어요.',
-    main: `${select}<div id="compat-basic"><p class="notice">궁합을 계산하는 중이에요…</p></div>` });
-  root.querySelector('#partner-select').onchange = e => { state.partnerId = e.target.value; renderCompat(); };
+    main: `${chips}${adding ? form : locked || '<div id="compat-basic"><p class="notice">궁합을 계산하는 중이에요…</p></div>'}
+      ${sel && !adding ? `<p class="pt-del"><button type="button" class="refund-link" data-partner-del="${sel.id}">이 상대 지우기</button></p>` : ''}` });
+  if (adding) { bindPartnerForm(root, p); root.querySelector('[data-premium]')?.remove(); return; }
+  if (!open) { root.querySelector('[data-premium]')?.remove(); return; }
   try {
-    const r = await request(`/api/profiles/${p.id}/compat?partnerId=${state.partnerId}`);
+    const r = await request(`/api/profiles/${p.id}/compat?partnerId=${sel.id}`);
     const score = parseInt(r.subtitle, 10);
-    const partner = state.profiles.find(x => String(x.id) === String(state.partnerId));
     root.querySelector('#compat-basic').innerHTML = `
-      ${compatHero(p, partner, score)}
+      ${compatHero(p, sel, score)}
       <p class="cp-grade">${esc(r.subtitle.replace(/^\d+점 · /, ''))}</p>
       ${reportHtml(r)}`;
   } catch (err) {
     root.querySelector('#compat-basic').innerHTML = `<p class="notice">궁합을 불러오지 못했어요. (${esc(err.message)})</p>`;
   }
-  mountPremium(root, p, 'COMPAT', state.partnerId);
+  mountPremium(root, p, 'COMPAT', sel.id);
 }
+
+/** 궁합 상대 입력 칸 */
+function bindPartnerForm(root, p) {
+  const f = root.querySelector('#pt-form');
+  let gender = null;
+  const dateEl = f.querySelector('#pt-date');
+  dateEl.addEventListener('input', () => {
+    const d = dateEl.value.replace(/\D/g, '').slice(0, 8);
+    dateEl.value = d.length > 6 ? `${d.slice(0, 4)}.${d.slice(4, 6)}.${d.slice(6)}` : d.length > 4 ? `${d.slice(0, 4)}.${d.slice(4)}` : d;
+  });
+  f.querySelector('#pt-time-unknown').onchange = e => { f.querySelector('#pt-time').disabled = e.target.checked; };
+  f.querySelectorAll('[data-ptg]').forEach(b => b.onclick = () => {
+    gender = b.dataset.ptg; f.querySelectorAll('[data-ptg]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  });
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const err = f.querySelector('#pt-error');
+    const name = f.querySelector('#pt-name').value.trim(), d = dateEl.value.replace(/\D/g, '');
+    const cal = f.querySelector('#pt-cal').value, unknown = f.querySelector('#pt-time-unknown').checked, time = f.querySelector('#pt-time').value;
+    err.textContent = !name ? '상대 이름을 적어주세요.' : d.length !== 8 ? '생년월일을 8자리로 적어주세요. 예) 19950712'
+      : !unknown && !time ? '태어난 시간을 고르거나 "시간 모름"을 체크해주세요.' : !gender ? '성별을 골라주세요.' : '';
+    if (err.textContent) return;
+    try {
+      const added = await request(`/api/profiles/${p.id}/partners`, { method: 'POST', body: JSON.stringify({
+        name, calendar: cal, birthDate: `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`, leapMonth: cal === 'LUNAR' && f.querySelector('#pt-leap').checked,
+        birthTime: unknown ? null : time, gender }) });
+      state.addingPartner = false; state.partnerId = String(added.id);
+      toast(added.free ? '무료 궁합을 볼 수 있어요 💞' : '상대를 추가했어요. 궁합을 열면 볼 수 있어요');
+      renderCompat();
+    } catch (x) { err.textContent = x.message; }
+  };
+}
+
+document.addEventListener('click', async e => {
+  const pick = e.target.closest('[data-partner-pick]');
+  if (pick) { state.partnerId = pick.dataset.partnerPick; state.addingPartner = false; return renderCompat(); }
+  if (e.target.closest('[data-partner-add]')) { state.addingPartner = true; return renderCompat(); }
+  if (e.target.closest('[data-partner-cancel]')) { state.addingPartner = false; return renderCompat(); }
+  const del = e.target.closest('[data-partner-del]');
+  if (del) {
+    if (del.dataset.confirm !== '1') { del.dataset.confirm = '1'; del.textContent = '지우면 이 상대와의 궁합(구매 포함)을 다시 볼 수 없어요. 정말 지울까요?'; return; }
+    try {
+      await request(`/api/profiles/${current().id}/partners/${encodeURIComponent(del.dataset.partnerDel)}`, { method: 'DELETE' });
+      state.partnerId = null; toast('상대를 지웠어요'); renderCompat();
+    } catch (x) { toast(x.message); }
+  }
+});
 
 /** 사랑운 · 연애운(애정운): 연애 스타일 + 올해 인연의 흐름 (무료) + 심화 리포트 */
 function renderLoveFortune() {
@@ -2107,10 +2187,24 @@ document.addEventListener('click', e => {
    ════════════════════════════════════════════ */
 const fbModal = document.getElementById('fb');
 let fbCat = null, fbPage = null;
+/** 종류마다 무엇을 적으면 되는지 안내 (빈 칸 안내문) */
+const FB_HINT = {
+  BUG: '어느 화면에서 무엇을 눌렀을 때 어떤 문제가 생겼나요?\n예) 사랑운 > 궁합에서 상대를 바꿨는데 결과가 그대로예요.',
+  IDEA: '있었으면 하는 기능과 그 이유를 적어주세요.\n예) 오늘의 운세를 매일 알림으로 받고 싶어요.',
+  READING: '어느 탭의 어떤 풀이가 어떻게 느껴졌나요?\n예) 연애운의 올해 흐름이 제 상황과 달랐어요.',
+  ETC: '자유롭게 남겨주세요.',
+};
+function setFbCat(cat) {
+  fbCat = cat;
+  fbModal.querySelectorAll('[data-fbcat]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.fbcat === cat)));
+  document.getElementById('fb-text').placeholder = FB_HINT[cat] || '먼저 위에서 의견 종류를 골라주세요.';
+}
 /** preset: { cat, text, page, hint } — "풀이가 안 맞아요"처럼 내용을 미리 채워서 열 때 */
 function openFeedback(preset = {}) {
-  fbCat = preset.cat || null; fbPage = preset.page || null;
-  fbModal.querySelectorAll('[data-fbcat]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.fbcat === fbCat)));
+  fbPage = preset.page || null;
+  setFbCat(preset.cat || null);
+  // "풀이가 안 맞아요"로 열면 종류는 '풀이 내용'으로 고정하고 버튼은 숨긴다 (내용 틀이 풀이용이라서)
+  fbModal.querySelector('.fb-cats').hidden = !!preset.fixed;
   document.getElementById('fb-title').textContent = preset.title || '의견 보내기';
   document.getElementById('fb-text').value = preset.text || '';
   document.getElementById('fb-count').textContent = `${(preset.text || '').length} / 1000`;
@@ -2124,7 +2218,7 @@ document.getElementById('fb-cancel').onclick = closeFeedback;
 fbModal.addEventListener('click', e => {
   if (e.target === fbModal) return closeFeedback();
   const c = e.target.closest('[data-fbcat]');
-  if (c) { fbCat = c.dataset.fbcat; fbModal.querySelectorAll('[data-fbcat]').forEach(b => b.setAttribute('aria-pressed', String(b === c))); }
+  if (c) setFbCat(c.dataset.fbcat);
 });
 document.addEventListener('click', e => {
   if (e.target.closest('[data-feedback]')) { e.preventDefault(); openFeedback(); }
@@ -2133,7 +2227,7 @@ document.addEventListener('click', e => {
     const c = current()?.saju.concern;
     if (!c) return;
     const text = `[내가 적은 고민]\n${c.text || '(문장 없이 분류만 고름: ' + c.label + ')'}\n\n[받은 풀이]\n${c.topic || c.label} 주제로 풀이가 나왔어요.\n\n[어떤 점이 안 맞았나요? 원했던 답은?]\n`;
-    openFeedback({ cat: 'READING', page: 'concern', title: '풀이가 안 맞았다면 알려주세요', text });
+    openFeedback({ cat: 'READING', page: 'concern', title: '풀이가 안 맞았다면 알려주세요', text, fixed: true });
     const ta = document.getElementById('fb-text');
     setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 50);
   }

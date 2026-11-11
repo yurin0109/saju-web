@@ -44,14 +44,16 @@ public final class PurchaseDto {
     public record Response(Long id, Long profileId, String productCode, String title,
                            int price, List<String> unlocks, Long partnerId, LocalDateTime createdAt,
                            String status, boolean opened, boolean refundable, String refundNote,
-                           LocalDateTime refundedAt) {
-        static Response of(Purchase p) {
+                           LocalDateTime refundedAt, String partnerName) {
+        static Response of(Purchase p) { return of(p, null); }
+
+        static Response of(Purchase p, String partnerName) {
             Product product = p.getProduct();
             String blocked = p.refundBlockedReason(LocalDateTime.now());
             return new Response(p.getId(), p.getProfileId(), product.name(), product.title(), p.getPrice(),
                     product.unlocks().stream().map(Enum::name).toList(), p.getPartnerId(), p.getCreatedAt(),
                     p.isActive() ? "ACTIVE" : "REFUNDED", p.getOpenedAt() != null, blocked == null, blocked,
-                    p.getRefundedAt());
+                    p.getRefundedAt(), partnerName);
         }
     }
 }

@@ -16,6 +16,16 @@ public interface ProfileRepository extends JpaRepository<Profile, Long> {
 
     long countByClientId(String clientId);
 
+    /** 내 사주 목록 (궁합 상대로 입력한 사주는 빼고) */
+    List<Profile> findByClientIdAndPartnerOfIsNullOrderByCreatedAtDesc(String clientId);
+
+    long countByClientIdAndPartnerOfIsNull(String clientId);
+
+    /** 이 사주의 궁합 상대들 (먼저 입력한 순) */
+    List<Profile> findByClientIdAndPartnerOfOrderByCreatedAtAsc(String clientId, Long ownerId);
+
+    long countByClientIdAndPartnerOf(String clientId, Long ownerId);
+
     /** 로그인하면 브라우저 ID로 저장된 데이터를 회원 열쇠(ownerKey)로 옮긴다 */
     @Modifying
     @Query("update Profile x set x.clientId = :to where x.clientId = :from")

@@ -30,8 +30,11 @@ public class PurchaseService {
     }
 
     public List<PurchaseDto.Response> findAll(String clientId) {
+        // 궁합 상대는 "내 사주 목록"에 없어서, 화면에 이름을 보여주려고 함께 내려준다
         return repository.findByClientIdOrderByCreatedAtDesc(clientId).stream()
-                .map(PurchaseDto.Response::of).toList();
+                .map(p -> PurchaseDto.Response.of(p, p.getPartnerId() == null ? null
+                        : profileRepository.findByIdAndClientId(p.getPartnerId(), clientId).map(Profile::getName).orElse(null)))
+                .toList();
     }
 
     /**
@@ -93,8 +96,9 @@ public class PurchaseService {
             // 궁합은 상대가 꼭 있어야 하고, 내가 저장한 다른 프로필이어야 한다
             if (partnerId == null) throw new IllegalArgumentException("궁합을 볼 상대를 선택해주세요.");
             if (partnerId.equals(p.getId())) throw new IllegalArgumentException("나와 다른 사람을 선택해주세요.");
-            profileRepository.findByIdAndClientId(partnerId, clientId)
+            Profile partner = profileRepository.findByIdAndClientId(partnerId, clientId)
                     .orElseThrow(() -> new NoSuchElementException("상대 사주 프로필을 찾을 수 없어요."));
+            if (!p.getId().equals(partner.getPartnerOf())) throw new NoSuchElementException("궁합 상대를 찾을 수 없어요.");
             if (ownsCompat(clientId, p.getId(), partnerId)) throw new IllegalArgumentException("이미 구매한 궁합이에요.");
             return product;
         }

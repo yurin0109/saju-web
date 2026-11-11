@@ -111,3 +111,8 @@ CREATE TABLE IF NOT EXISTS feedback (
     PRIMARY KEY (id),
     INDEX idx_feedback_created (created_at)
 ) ENGINE = InnoDB COMMENT = '건의사항';
+
+-- 궁합 상대 (v14): 궁합 화면에서 직접 입력한 상대는 profile 에 partner_of(내 사주 id)를 채워 저장
+-- 첫 번째 상대만 무료(free_partner_id), 두 번째부터는 그 상대와의 궁합을 구매해야 열림
+-- 기존 DB 에 추가할 때 (ddl-auto=update 면 자동):
+-- ALTER TABLE profile ADD COLUMN partner_of BIGINT NULL, ADD COLUMN free_partner_id BIGINT NULL;

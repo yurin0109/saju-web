@@ -21,6 +21,8 @@ public class ProfileService {
 
     private static final ZoneId KOREA = ZoneId.of("Asia/Seoul");
     static final int MAX_PROFILES = 30;
+    /** 사주 하나에 입력할 수 있는 궁합 상대 수 */
+    static final int MAX_PARTNERS = 20;
 
     private final ProfileRepository repository;
     private final ReflectionRepository reflectionRepository;
@@ -37,7 +39,7 @@ public class ProfileService {
     }
 
     public List<ProfileResponse> findAll(String clientId) {
-        return repository.findByClientIdOrderByCreatedAtDesc(clientId).stream()
+        return repository.findByClientIdAndPartnerOfIsNullOrderByCreatedAtDesc(clientId).stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -49,7 +51,7 @@ public class ProfileService {
     @Transactional
     public ProfileResponse create(String clientId, ProfileRequest req) {
         // 한 브라우저(사용자)당 저장할 수 있는 사주 수 제한: DB를 쓰레기 데이터로 채우는 것 방지
-        if (repository.countByClientId(clientId) >= MAX_PROFILES) {
+        if (repository.countByClientIdAndPartnerOfIsNull(clientId) >= MAX_PROFILES) {
             throw new IllegalArgumentException("사주는 " + MAX_PROFILES + "개까지 저장할 수 있어요. 안 쓰는 사주를 지운 뒤 추가해주세요.");
         }
         LocalDate solar = solarDate(req);
@@ -62,6 +64,7 @@ public class ProfileService {
     @Transactional
     public ProfileResponse update(String clientId, Long id, ProfileRequest req) {
         Profile p = get(clientId, id);
+        if (p.isPartner()) throw new IllegalArgumentException("궁합 상대의 정보는 바꿀 수 없어요. 새 상대로 추가해주세요.");
         LocalDate solar = solarDate(req);
         boolean sajuChanged = !solar.equals(p.getBirthDate())
                 || !java.util.Objects.equals(req.birthTime(), p.getBirthTime())
@@ -109,17 +112,72 @@ public class ProfileService {
         };
     }
 
-    /** 궁합 기본 풀이 (무료). 상대는 내가 저장한 다른 사주 프로필 */
+    /**
+     * 궁합 기본 풀이.
+     * 첫 번째로 입력한 상대는 무료, 두 번째 상대부터는 그 상대와의 궁합을 구매해야 열린다.
+     */
     public Report compat(String clientId, Long id, Long partnerId) {
         Profile p = get(clientId, id);
         Profile partner = partner(clientId, p, partnerId);
+        if (!partner.getId().equals(p.getFreePartnerId()) && !purchaseService.ownsCompat(clientId, p.getId(), partner.getId())) {
+            throw new com.byeolgyeol.saju.common.LockedException("두 번째 상대부터는 궁합을 열어야 볼 수 있어요.");
+        }
         return Reports.compatBasic(p.getName(), chart(p), partner.getName(), chart(partner));
     }
 
+    /** 궁합 상대: 이 사주에 입력한 상대만 (내 다른 사주는 상대로 못 씀) */
     private Profile partner(String clientId, Profile me, Long partnerId) {
         if (partnerId == null) throw new IllegalArgumentException("궁합을 볼 상대를 선택해주세요.");
-        if (partnerId.equals(me.getId())) throw new IllegalArgumentException("나와 다른 사람을 선택해주세요.");
-        return get(clientId, partnerId);
+        Profile partner = get(clientId, partnerId);
+        if (!me.getId().equals(partner.getPartnerOf())) throw new NoSuchElementException("궁합 상대를 찾을 수 없어요.");
+        return partner;
+    }
+
+    /** 궁합 상대 한 명 (화면용): free = 무료로 보는 첫 상대, unlocked = 궁합을 구매한 상대 */
+    public record PartnerDto(Long id, String name, String birthDate, java.time.LocalTime birthTime, String gender,
+                             String calendar, boolean free, boolean unlocked, String dayMaster, String dayMasterElement) {}
+
+    private PartnerDto partnerDto(Profile x, boolean free, boolean unlocked) {
+        var dm = chart(x).dayMaster();
+        return new PartnerDto(x.getId(), x.getName(), x.getBirthDate().toString(), x.getBirthTime(), x.getGender(),
+                x.getCalendarType(), free, unlocked, dm.korean(), dm.element().name());
+    }
+
+    public List<PartnerDto> partners(String clientId, Long id) {
+        Profile p = get(clientId, id);
+        List<Long> bought = purchaseService.compatPartners(clientId, p.getId());
+        return repository.findByClientIdAndPartnerOfOrderByCreatedAtAsc(clientId, p.getId()).stream()
+                .map(x -> partnerDto(x, x.getId().equals(p.getFreePartnerId()), bought.contains(x.getId())))
+                .toList();
+    }
+
+    /** 궁합 상대 입력. 처음 입력한 상대가 무료 상대가 된다 */
+    @Transactional
+    public PartnerDto addPartner(String clientId, Long id, ProfileRequest req) {
+        Profile me = get(clientId, id);
+        if (me.isPartner()) throw new IllegalArgumentException("궁합 상대의 궁합은 볼 수 없어요.");
+        if (repository.countByClientIdAndPartnerOf(clientId, me.getId()) >= MAX_PARTNERS) {
+            throw new IllegalArgumentException("궁합 상대는 " + MAX_PARTNERS + "명까지 입력할 수 있어요.");
+        }
+        Profile partner = new Profile(clientId, req.name().trim(), solarDate(req), req.birthTime(), req.gender(), null);
+        partner.setCalendar(req.lunar() ? "LUNAR" : "SOLAR", req.lunar() ? req.birthDate() : null, req.lunar() ? req.leap() : null);
+        partner.setPartnerOf(me.getId());
+        repository.save(partner);
+        boolean free = false;
+        if (me.getFreePartnerId() == null) {
+            me.setFreePartnerId(partner.getId());
+            repository.save(me);
+            free = true;
+        }
+        return partnerDto(partner, free, false);
+    }
+
+    /** 궁합 상대 삭제 (무료 상대를 지워도 무료 자리는 다시 생기지 않음) */
+    @Transactional
+    public void deletePartner(String clientId, Long id, Long partnerId) {
+        Profile me = get(clientId, id);
+        Profile partner = partner(clientId, me, partnerId);
+        repository.delete(partner);
     }
 
     private SajuChart chart(Profile p) {
@@ -158,6 +216,8 @@ public class ProfileService {
         // 프로필을 지우면 그 프로필로 쓴 성찰 일기도 함께 지운다
         reflectionRepository.deleteByClientIdAndProfileId(clientId, p.getId());
         purchaseRepository.deleteByClientIdAndProfileId(clientId, p.getId());
+        // 이 사주에 입력한 궁합 상대도 함께 지운다
+        repository.findByClientIdAndPartnerOfOrderByCreatedAtAsc(clientId, p.getId()).forEach(repository::delete);
         repository.delete(p);
     }
 

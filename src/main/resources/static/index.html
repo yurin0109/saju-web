@@ -696,6 +696,7 @@
     background: var(--card); border: 1px solid var(--accent-line); color: var(--text); font-size: 13px; box-shadow: 0 6px 20px rgba(0,0,0,.35); }
   .fb-fab:hover { border-color: var(--accent); }
   .fb-cats { display: flex; flex-wrap: wrap; gap: 8px; }
+  .fb-cats[hidden] { display: none; }
   .fb-cats button { padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 13px; color: var(--body); }
   .fb-cats button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
   .fb-text { width: 100%; min-height: 130px; resize: vertical; box-sizing: border-box; }
@@ -929,6 +930,28 @@
   .ss-more li { border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; font-size: 13px; color: var(--body); line-height: 1.65; }
   .ss-more li b { display: block; color: var(--text); font-size: 14px; margin-bottom: 4px; }
   @media (max-width: 640px) { .shinsal-grid, .ss-more ul { grid-template-columns: 1fr; } .ss-card { padding: 20px; } }
+
+  /* 궁합 상대 입력 */
+  .pt-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .pt-chip { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); font-size: 14px; color: var(--body); }
+  .pt-chip small { font-size: 11px; color: var(--muted); }
+  .pt-chip[aria-selected="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
+  .pt-chip.add { border-style: dashed; color: var(--accent); }
+  .pt-form { display: flex; flex-direction: column; gap: 14px; }
+  .pt-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .pt-grid label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--body); }
+  .pt-row { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+  .pt-gender { display: inline-flex; gap: 6px; margin-left: auto; }
+  .pt-gender button { padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); font-size: 13px; color: var(--body); }
+  .pt-gender button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
+  .pt-actions { display: flex; justify-content: flex-end; gap: 8px; }
+  .pt-locked { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 32px 16px; border: 1px dashed var(--accent-line); border-radius: var(--radius); }
+  .pt-locked .big { font-size: 34px; }
+  .pt-locked h3 { font-family: var(--serif); font-size: 20px; font-weight: 500; color: var(--text); }
+  .pt-locked p { font-size: 14px; color: var(--body); max-width: 460px; line-height: 1.7; }
+  .pt-del { text-align: right; margin-top: 8px; }
+  @media (max-width: 860px) { .pt-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 520px) { .pt-grid { grid-template-columns: 1fr; } .pt-gender { margin-left: 0; } .pt-actions .btn { flex: 1; } }
 </style>
 </head>
 <body>
@@ -1420,7 +1443,7 @@
       <button type="button" data-fbcat="READING" aria-pressed="false">🔮 풀이 내용</button>
       <button type="button" data-fbcat="ETC" aria-pressed="false">💬 기타</button>
     </div>
-    <textarea class="input fb-text" id="fb-text" maxlength="1000" placeholder="예) 고민 풀이가 어디 있는지 찾기 어려웠어요."></textarea>
+    <textarea class="input fb-text" id="fb-text" maxlength="1000" placeholder="먼저 위에서 의견 종류를 골라주세요."></textarea>
     <span class="fb-count" id="fb-count">0 / 1000</span>
     <p class="pay-error" id="fb-error" role="alert"></p>
     <div class="modal-actions">
@@ -1443,6 +1466,6 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="/app.js?v=12"></script>
+<script src="/app.js?v=14"></script>
 </body>
 </html>

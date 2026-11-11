@@ -59,6 +59,17 @@ public class Profile {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /**
+     * 궁합 상대로 입력한 사주면, 누구의 상대인지 (내 사주 프로필 id). 내 사주면 null.
+     * 상대 사주는 "내 사주 목록"에 보이지 않고, 궁합 화면에서만 쓴다.
+     */
+    @Column(name = "partner_of")
+    private Long partnerOf;
+
+    /** 무료로 궁합을 볼 수 있는 첫 번째 상대 (한 번 정해지면 지워도 다시 생기지 않음) */
+    @Column(name = "free_partner_id")
+    private Long freePartnerId;
+
     protected Profile() {}
 
     public Profile(String clientId, String name, LocalDate birthDate, LocalTime birthTime,
@@ -92,6 +103,12 @@ public class Profile {
         this.concernType = concernType;
         this.concernText = concernText;
     }
+
+    public void setPartnerOf(Long ownerId) { this.partnerOf = ownerId; }
+    public Long getPartnerOf() { return partnerOf; }
+    public boolean isPartner() { return partnerOf != null; }
+    public Long getFreePartnerId() { return freePartnerId; }
+    public void setFreePartnerId(Long id) { this.freePartnerId = id; }
 
     public boolean isLunar() { return "LUNAR".equals(calendarType) && lunarDate != null; }
     public String getCalendarType() { return calendarType == null ? "SOLAR" : calendarType; }
