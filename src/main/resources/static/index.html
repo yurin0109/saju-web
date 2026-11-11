@@ -400,6 +400,7 @@
   .art-hero { height: auto; min-height: 170px; padding: 12px 20px; gap: 18px; flex-wrap: wrap; }
   .art { width: 220px; height: 140px; flex-shrink: 0; }
   .study-hero { background: radial-gradient(circle at 30% 50%, rgba(143,91,214,.25), transparent 50%), radial-gradient(circle at 75% 40%, rgba(255,210,122,.12), transparent 45%), var(--card-2); }
+  .love-hero { background: radial-gradient(circle at 30% 45%, rgba(255,112,207,.22), transparent 45%), radial-gradient(circle at 75% 60%, rgba(255,154,122,.16), transparent 45%), var(--card-2); }
   .reunion-hero { background: radial-gradient(circle at 30% 45%, rgba(244,197,106,.22), transparent 45%), radial-gradient(circle at 75% 60%, rgba(255,90,122,.16), transparent 45%), var(--card-2); }
   .cp-hero { display: flex; align-items: center; justify-content: center; gap: 28px; padding: 24px 16px; border-radius: 14px;
     background: radial-gradient(circle at 50% 50%, rgba(255,112,207,.22), transparent 60%), var(--card-2); border: 1px solid var(--accent-line); }
@@ -672,6 +673,34 @@
   .acct-more .auth-form { margin-top: 12px; }
   .concern-card { padding: 30px; display: flex; flex-direction: column; gap: 14px; border-color: var(--accent-line); }
   .concern-card h3 { font-family: var(--serif); font-size: 22px; font-weight: 500; }
+  #concern { scroll-margin-top: 104px; }
+  @media (max-width: 860px) { #concern { scroll-margin-top: 150px; } }
+  .concern-quote { margin: 0; padding: 12px 16px; border-left: 3px solid var(--accent); background: var(--accent-soft); border-radius: 0 8px 8px 0;
+    font-size: 15px; color: var(--text); line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
+  .concern-part { display: flex; flex-direction: column; gap: 8px; padding-top: 14px; border-top: 1px solid var(--line); }
+  .concern-part h4 { font-size: 15px; font-weight: 600; color: var(--text); }
+  .concern-steps { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: var(--body); line-height: 1.7; }
+  .concern-steps li::marker { color: var(--accent); font-weight: 700; }
+  .concern-ask { padding: 16px 18px; border-radius: 10px; background: var(--card-2); border: 1px dashed var(--accent-line); display: flex; flex-direction: column; gap: 6px; }
+  .concern-ask span { font-size: 12px; font-weight: 700; color: var(--accent); }
+  .concern-ask p { font-family: var(--serif); font-size: 17px; color: var(--text); line-height: 1.6; }
+  .concern-ask small { font-size: 12px; color: var(--muted); }
+  .concern-miss { align-self: flex-start; font-size: 13px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; padding: 4px 0; }
+  .concern-miss:hover { color: var(--text); }
+  .concern-notice { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100%; text-align: left; padding: 14px 18px; border-radius: var(--radius);
+    background: var(--accent-soft); border: 1px solid var(--accent-line); color: var(--text); font-size: 14px; cursor: pointer; }
+  .concern-notice b { color: var(--accent); margin-left: auto; white-space: nowrap; }
+  .concern-notice:hover { border-color: var(--accent); }
+  /* 의견 보내기 */
+  .fb-fab { position: fixed; right: 20px; bottom: 20px; z-index: 40; display: flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 999px;
+    background: var(--card); border: 1px solid var(--accent-line); color: var(--text); font-size: 13px; box-shadow: 0 6px 20px rgba(0,0,0,.35); }
+  .fb-fab:hover { border-color: var(--accent); }
+  .fb-cats { display: flex; flex-wrap: wrap; gap: 8px; }
+  .fb-cats button { padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 13px; color: var(--body); }
+  .fb-cats button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
+  .fb-text { width: 100%; min-height: 130px; resize: vertical; box-sizing: border-box; }
+  .fb-count { font-size: 12px; color: var(--muted); text-align: right; }
+  @media (max-width: 600px) { .fb-fab { right: 12px; bottom: 12px; padding: 9px 13px; } .fb-fab .t { display: none; } }
   .concern-cta { margin-top: 6px; padding: 18px 20px; border-radius: 12px; background: var(--card-2); display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; }
   .concern-cta p { font-size: 14px; color: var(--body); flex: 1; min-width: 220px; line-height: 1.7; }
   .core-more { display: flex; flex-direction: column; gap: 12px; }
@@ -1138,7 +1167,7 @@
   <div id="career-root"></div>
 </section>
 
-<!-- ═════════════ 탭 6. 사랑운 (결혼운 · 궁합 · 재회운) ═════════════ -->
+<!-- ═════════════ 탭 6. 사랑운 (연애운 · 궁합 · 재회운 · 결혼운) ═════════════ -->
 <section class="panel" id="panel-marriage" role="tabpanel">
   <div id="marriage-root"></div>
 </section>
@@ -1215,7 +1244,7 @@
     <p>수많은 별 속에서 나를 발견하는 시간</p>
     <p>사주 풀이는 오락과 자기 성찰을 위한 참고이며, 미래나 특정 결과를 보장하지 않습니다.</p>
   </div>
-  <p class="f-links"><button class="f-link" data-help="privacy">개인정보 처리방침</button> · <button class="f-link" data-help="terms">이용약관</button> · <button class="f-link" data-help="guide">이용 안내</button> · <button class="f-link" data-buys>구매 내역</button> · <button class="f-link" data-help="refund">환불 규정</button> © 2026 Among the Stars</p>
+  <p class="f-links"><button class="f-link" data-help="privacy">개인정보 처리방침</button> · <button class="f-link" data-help="terms">이용약관</button> · <button class="f-link" data-help="guide">이용 안내</button> · <button class="f-link" data-buys>구매 내역</button> · <button class="f-link" data-help="refund">환불 규정</button> · <button class="f-link" data-feedback>의견 보내기</button> © 2026 Among the Stars</p>
 </footer>
 
 <!-- 삭제 확인 모달 -->
@@ -1263,7 +1292,7 @@
         <table class="guide-table">
           <tr><th>홈</th><td>서비스 소개와 이용 순서</td></tr>
           <tr><th>사주 입력</th><td>새 사주 추가 · 기존 사주 정보 수정</td></tr>
-          <tr><th>무료 · 유료</th><td><b>무료</b>: 모든 탭의 기본 풀이(내 결과 · 올해 운세 · 직장 · 학업 · 사랑운 · 가족운) / <b>유료</b>: 각 탭 아래의 심화 리포트 7종 (사주마다 따로 구매, 궁합은 상대 1명마다 구매)</td></tr>
+          <tr><th>무료 · 유료</th><td><b>무료</b>: 모든 탭의 기본 풀이(내 결과 · 올해 운세 · 직장 · 학업 · 사랑운 · 가족운) / <b>유료</b>: 각 탭 아래의 심화 리포트 8종 (사주마다 따로 구매, 궁합은 상대 1명마다 구매)</td></tr>
           <tr><th>내 결과</th><td>여덟 글자, 오행 비율, 핵심 성향, 강한 기운과 채우면 좋은 기운, 성찰 질문</td></tr>
           <tr><th>올해 운세</th><td>올해 간지와 나의 관계로 읽는 흐름, 주의 포인트, 풀이 근거</td></tr>
           <tr><th>직장운</th><td>십성 분포로 읽는 일하는 스타일, 잘 맞는 분야, 올해 일의 흐름</td></tr>
@@ -1320,7 +1349,7 @@
         <h4>환불할 수 있는 경우</h4>
         <ul>
           <li>구매 후 <b>7일 이내</b>이고, 구매한 심화 리포트를 <b>한 번도 열어보지 않은 경우</b> 전액 환불해드려요.</li>
-          <li>묶음(6종)은 묶음 안의 리포트를 하나도 열지 않았을 때 전액 환불돼요.</li>
+          <li>묶음(7종)은 묶음 안의 리포트를 하나도 열지 않았을 때 전액 환불돼요.</li>
           <li>리포트가 오류로 열리지 않거나 내용이 잘못 나온 경우에는 열어봤더라도 환불해드려요. 이용 안내의 문의로 알려주세요.</li>
         </ul>
         <h4>환불할 수 없는 경우</h4>
@@ -1376,6 +1405,31 @@
   </div>
 </div>
 
+<!-- 의견 보내기 (건의사항) -->
+<button type="button" class="fb-fab" id="fb-open" aria-haspopup="dialog">💬 <span class="t">의견 보내기</span></button>
+<div class="modal-bg" id="fb" role="dialog" aria-modal="true" aria-labelledby="fb-title">
+  <div class="card pay">
+    <div class="card-head">
+      <h3 id="fb-title">의견 보내기</h3>
+      <button class="guide-close" id="fb-close" aria-label="닫기">✕</button>
+    </div>
+    <p class="notice">불편했던 점, 있었으면 하는 기능, 풀이에 대한 생각을 자유롭게 남겨주세요. 보내주신 의견을 보고 사이트를 고쳐나갈게요. 이름이나 연락처 같은 개인정보는 적지 말아주세요.</p>
+    <div class="fb-cats" role="group" aria-label="의견 종류">
+      <button type="button" data-fbcat="BUG" aria-pressed="false">🐞 불편 · 오류</button>
+      <button type="button" data-fbcat="IDEA" aria-pressed="false">💡 이런 기능이 있으면</button>
+      <button type="button" data-fbcat="READING" aria-pressed="false">🔮 풀이 내용</button>
+      <button type="button" data-fbcat="ETC" aria-pressed="false">💬 기타</button>
+    </div>
+    <textarea class="input fb-text" id="fb-text" maxlength="1000" placeholder="예) 고민 풀이가 어디 있는지 찾기 어려웠어요."></textarea>
+    <span class="fb-count" id="fb-count">0 / 1000</span>
+    <p class="pay-error" id="fb-error" role="alert"></p>
+    <div class="modal-actions">
+      <button class="btn btn-line" id="fb-cancel">취소</button>
+      <button class="btn btn-primary" id="fb-send">보내기</button>
+    </div>
+  </div>
+</div>
+
 <!-- 구매 내역 (하단 링크로만 열림) -->
 <div class="modal-bg" id="buys" role="dialog" aria-modal="true" aria-labelledby="buys-title">
   <div class="card pay">
@@ -1389,6 +1443,6 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="/app.js?v=8"></script>
+<script src="/app.js?v=12"></script>
 </body>
 </html>

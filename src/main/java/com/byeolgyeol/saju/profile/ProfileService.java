@@ -98,6 +98,7 @@ public class ProfileService {
             case CAREER -> Reports.careerPremium(p.getName(), chart, year);
             case MARRIAGE -> Reports.marriagePremium(p.getName(), p.getGender(), chart, year);
             case REUNION -> Reports.reunionPremium(p.getName(), chart, year);
+            case LOVE -> Reports.lovePremium(p.getName(), p.getGender(), chart, year);
             case FAMILY -> Reports.familyPremium(p.getName(), chart, year);
             case STUDY -> Reports.studyPremium(p.getName(), chart, year);
             case COMPAT -> {

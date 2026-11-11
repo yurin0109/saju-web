@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS purchase (
     profile_id   BIGINT      NOT NULL                COMMENT '어떤 사주 프로필로 구매했는지',
     product_code VARCHAR(20) NOT NULL                COMMENT 'YEAR / CAREER / MARRIAGE / COMPAT / REUNION / FAMILY / BUNDLE',
     price        INT         NOT NULL                COMMENT '구매 당시 가격(원)',
+    partner_id   BIGINT      NULL                    COMMENT '궁합(COMPAT)일 때 상대 프로필 (궁합은 상대마다 구매)',
     created_at   DATETIME    NOT NULL                COMMENT '구매일시',
     PRIMARY KEY (id),
     INDEX idx_purchase_client (client_id),
@@ -66,6 +67,7 @@ CREATE TABLE IF NOT EXISTS payment_order (
     profile_id   BIGINT       NOT NULL,
     product_code VARCHAR(20)  NOT NULL,
     amount       INT          NOT NULL               COMMENT '서버가 정한 결제 금액 (승인 때 비교)',
+    partner_id   BIGINT       NULL                   COMMENT '궁합 주문일 때 상대 프로필',
     status       VARCHAR(10)  NOT NULL               COMMENT 'READY / PAID / FAILED',
     payment_key  VARCHAR(200) NULL,
     method       VARCHAR(30)  NULL,
@@ -76,3 +78,36 @@ CREATE TABLE IF NOT EXISTS payment_order (
     PRIMARY KEY (id),
     INDEX idx_order_client (client_id)
 ) ENGINE = InnoDB COMMENT = '토스 결제 주문';
+
+-- 회원 (아이디 · 비밀번호 로그인). 비밀번호는 PBKDF2 해시만 저장
+-- owner_key: 이 회원의 사주 · 구매 · 성찰 일기가 저장되는 client_id 값
+CREATE TABLE IF NOT EXISTS app_member (   -- MEMBER 는 MySQL 8 예약어
+    id            BIGINT       NOT NULL AUTO_INCREMENT,
+    username      VARCHAR(20)  NOT NULL UNIQUE,
+    password_hash VARCHAR(200) NOT NULL              COMMENT 'pbkdf2$반복$소금$해시',
+    owner_key     VARCHAR(36)  NOT NULL UNIQUE,
+    failed_count  INT          NOT NULL DEFAULT 0    COMMENT '연속으로 비밀번호 틀린 횟수',
+    locked_until  DATETIME     NULL                  COMMENT '5번 틀리면 10분 잠금',
+    created_at    DATETIME     NOT NULL,
+    last_login_at DATETIME     NULL,
+    recovery_hash VARCHAR(64)  NULL UNIQUE           COMMENT '복구 코드의 SHA-256 (코드 자체는 저장 안 함)',
+    PRIMARY KEY (id)
+) ENGINE = InnoDB COMMENT = '회원';
+
+-- 환불 (구매 후 7일 이내 · 미열람만). 기존 DB에 컬럼 추가할 때:
+-- ALTER TABLE purchase ADD COLUMN opened_at DATETIME NULL, ADD COLUMN refunded_at DATETIME NULL;
+-- (JPA ddl-auto=update 면 서버가 켜질 때 자동으로 추가됨)
+
+-- 건의사항 (사이트 오른쪽 아래 "의견 보내기"). 관리자 페이지 /admin.html 에서 확인
+CREATE TABLE IF NOT EXISTS feedback (
+    id         BIGINT        NOT NULL AUTO_INCREMENT,
+    client_id  VARCHAR(36)   NULL                COMMENT '도배 방지용 (관리자 화면에는 안 보임)',
+    category   VARCHAR(10)   NOT NULL            COMMENT 'BUG / IDEA / READING / ETC',
+    message    VARCHAR(1000) NOT NULL,
+    page       VARCHAR(30)   NULL                COMMENT '보낸 화면',
+    username   VARCHAR(20)   NULL                COMMENT '로그인한 회원이면 아이디',
+    done       BOOLEAN       NOT NULL DEFAULT FALSE,
+    created_at DATETIME      NOT NULL,
+    PRIMARY KEY (id),
+    INDEX idx_feedback_created (created_at)
+) ENGINE = InnoDB COMMENT = '건의사항';

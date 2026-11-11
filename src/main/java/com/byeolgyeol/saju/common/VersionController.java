@@ -13,7 +13,7 @@ import java.util.Map;
 @RestController
 public class VersionController {
 
-    public static final String VERSION = "2026-11-06 로그인 · 계정 복구 · 환불 · 보안 v8";
+    public static final String VERSION = "2026-11-11 풀이 안 맞아요 · 고민 단어 확장 · 관리자 v12";
 
     private final int questionCount = QuestionBank.load().size();
 

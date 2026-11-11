@@ -57,23 +57,29 @@ public final class Reports {
 
     // ════════════════════ 고민 맞춤 풀이 (무료) ════════════════════
 
+    /**
+     * 고민 맞춤 풀이.
+     * topic: 고민 문장에서 찾은 세부 주제 (예: 이직 · 퇴사), paragraphs: 공감 → 사주로 본 해석 → 나의 기운 → 올해 흐름,
+     * steps: 지금 해볼 일 3가지, question: 스스로에게 던져볼 질문
+     */
     public record ConcernDto(String type, String label, String text, List<String> paragraphs,
-                             String product, String pitch) {}
+                             String product, String pitch, String topic, List<String> steps, String question) {}
 
     public static ConcernDto concern(String type, String text, String name, SajuChart chart, int sajuYear) {
         if (type == null) return null;
         MoreText.Concern c = MoreText.CONCERN.get(type);
-        if (c == null) return null;
+        ConcernText.Topic topic = ConcernText.match(type, text);
+        if (c == null || topic == null) return null;
         Element me = chart.dayMaster().element();
         Relation rel = yearRelation(chart, sajuYear);
         List<String> ps = new ArrayList<>();
-        if (text != null && !text.isBlank()) {
-            ps.add("“" + text.strip() + "”라는 고민을 적어주셨어요. " + name + " 님의 사주로 이 고민을 함께 들여다볼게요.");
-        }
-        ps.add(c.intro());
+        String quote = text == null || text.isBlank() ? null : text.strip();
+        ps.add((quote != null ? "“" + quote + "” — " : "") + topic.empathy());
+        ps.add(topic.insight());
         ps.add(MoreText.CONCERN_APPROACH.get(me));
-        ps.add(sajuYear + "년의 흐름으로 보면, " + MoreText.CONCERN_TIMING.get(rel));
-        return new ConcernDto(type, c.label(), text, ps, c.product(), c.pitch());
+        ps.add(sajuYear + "년의 흐름으로 보면, " + MoreText.CONCERN_TIMING.get(rel)
+                + " 특히 가장 약한 " + elementName(chart.weakest()) + "의 기운을 채워주는 쪽으로 움직이면 이 고민을 푸는 데 힘이 실려요.");
+        return new ConcernDto(type, c.label(), quote, ps, c.product(), c.pitch(), topic.label(), topic.steps(), topic.question());
     }
 
     /** 내 결과: 일간 더 읽기 (관계에서 · 일에서 · 지칠 때) */
@@ -385,6 +391,105 @@ public final class Reports {
         b.items("마음 정리 가이드", "다시 만나든, 떠나보내든 나를 지키는 다섯 단계", List.of(),
                 java.util.stream.IntStream.range(0, LovePremiumText.REUNION_GUIDE.size())
                         .mapToObj(i -> new Report.Item(String.valueOf(i + 1), null, LovePremiumText.REUNION_GUIDE.get(i))).toList());
+        return b.build();
+    }
+
+    // ════════════════════ 연애운 (애정운) ════════════════════
+
+    public static Report loveBasic(String name, String gender, SajuChart chart, int sajuYear) {
+        Element me = chart.dayMaster().element();
+        Relation rel = yearRelation(chart, sajuYear);
+        return new Report.Builder("LOVE", "연애운", "나의 연애 스타일과 올해 인연의 흐름")
+                .text("나의 연애 스타일", elementName(me) + "의 기운", List.of(LoveText.STYLE.get(me)))
+                .text(sajuYear + "년 연애의 흐름", rel.koreanName() + "의 해", List.of(LoveText.FLOW.get(rel)))
+                .build();
+    }
+
+    public static Report lovePremium(String name, String gender, SajuChart chart, int sajuYear) {
+        return lovePremium(name, gender, chart, sajuYear, LocalDate.now(java.time.ZoneId.of("Asia/Seoul")));
+    }
+
+    /** 연애운 심화. 인연의 별 = 남성 재성 · 여성 관성 (결혼운의 배우자 별과 같은 기준) */
+    static Report lovePremium(String name, String gender, SajuChart chart, int sajuYear, LocalDate today) {
+        Element me = chart.dayMaster().element();
+        Map<Relation, Integer> counts = TenGods.count(chart);
+        Relation star = TenGods.spouseStar(gender);
+        String level = TenGods.level(counts.get(star));
+        Relation palace = TenGods.spousePalace(chart);
+        Branch dayBranch = chart.day().branch();
+        Relation rel = yearRelation(chart, sajuYear);
+        boolean dohwa = ShinSal.find(chart).stream().anyMatch(f -> f.code().equals("DOHWA"));
+
+        Report.Builder b = new Report.Builder("LOVE", "연애운 심화 리포트",
+                name + " 님의 연애 스타일 · 인연의 별 · 인연이 들어오는 시기를 자세히 읽어요.");
+
+        b.text("한눈에 보는 연애운", null, List.of(
+                name + " 님은 " + elementName(me) + "의 기운으로 사랑하는 사람이고, 이성 인연의 별(" + star.koreanName() + ")은 '"
+                        + LEVEL_KO.get(level) + "'이에요. 연애에서 원하는 관계는 배우자 자리(" + palace.koreanName()
+                        + ")로 보고, 올해 " + sajuYear + "년은 " + rel.koreanName() + "의 해예요.",
+                LoveText.FLOW.get(rel) + (dohwa ? " 사주에 도화살이 있어 매력이 눈에 띄는 사람이라, 올해 만남의 기회를 더 잘 살릴 수 있어요." : "")));
+
+        b.text("나의 연애 스타일 심화", elementName(me) + "의 기운", LoveText.STYLE_DEEP.get(me));
+        b.text("이성 인연의 별", "인연의 별 " + star.koreanName() + " (" + ("F".equals(gender) ? "여성" : "남성") + " 기준) · " + LEVEL_KO.get(level),
+                LoveText.STAR.get(level));
+        b.text("연애에서 원하는 관계", "배우자 자리 " + dayBranch.korean() + "(" + dayBranch.hanja() + ") · " + palace.koreanName(),
+                List.of(LoveText.PALACE.get(palace)));
+        b.text("나의 매력 포인트", dohwa ? "도화살 있음" : "도화살 없음", List.of(dohwa
+                ? "도화살은 사람을 끄는 매력의 별이에요. 첫인상이 좋고 주변에 사람이 잘 모여요. 매력이 오해를 부르지 않게 관계의 선을 분명히 하면, 이 기운이 좋은 인연으로 이어져요."
+                : "도화살이 없다고 매력이 없는 게 아니에요. 첫눈에 확 끌리기보다 알수록 좋아지는 매력이라, 자주 만나고 대화할 수 있는 자리에서 인연이 깊어져요."));
+
+        // 앞으로 12개월 중 인연이 들어오기 좋은 달 TOP 3
+        record Month(LocalDate d, Pillar p, int score, String why) {}
+        List<Month> months = new ArrayList<>();
+        LocalDate first = today.withDayOfMonth(15);
+        for (int i = 0; i < 12; i++) {
+            LocalDate d = first.plusMonths(i);
+            Pillar mp = CALC.monthPillar(d);
+            Relation mr = Relation.between(me, mp.stem().element());
+            int score = 0;
+            List<String> why = new ArrayList<>();
+            if (mr == star) { score += 2; why.add("인연의 별이 들어오는 달"); }
+            if (hap(mp.branch(), dayBranch)) { score += 2; why.add("배우자 자리와 합을 이루는 달"); }
+            if (mr == Relation.OUTPUT) { score += 1; why.add("매력이 드러나는 달"); }
+            if (chung(mp.branch(), dayBranch)) score -= 1;
+            months.add(new Month(d, mp, score, why.isEmpty() ? "마음이 편안한 달" : String.join(" · ", why)));
+        }
+        List<Report.Item> best = months.stream()
+                .sorted((x, y) -> Integer.compare(y.score(), x.score()))
+                .limit(3)
+                .sorted(java.util.Comparator.comparing(Month::d))
+                .map(m -> new Report.Item(m.d().getYear() + "년 " + m.d().getMonthValue() + "월", m.p().korean() + "월 · " + m.why(),
+                        m.why().startsWith("인연의 별") ? "인연의 별이 들어와 진지한 만남이 생기기 쉬운 달이에요. 소개나 모임 제안이 오면 가볍게라도 나가보세요."
+                        : m.why().startsWith("배우자 자리") ? "마음이 잘 통하는 사람과 가까워지기 쉬운 달이에요. 호감 가는 사람이 있다면 먼저 대화를 청해보세요."
+                        : m.why().startsWith("매력") ? "내 매력이 잘 드러나는 달이에요. 새로운 곳에 가거나 먼저 연락하는 작은 시도가 인연으로 이어지기 쉬워요."
+                        : "마음이 편안해 관계를 차분히 돌아보기 좋은 달이에요. 지금 곁에 있는 사람과의 시간을 소중히 해보세요."))
+                .toList();
+        b.items("인연이 들어오기 좋은 달 TOP 3", "이번 달부터 12개월 중에서 골랐어요.", List.of(), best);
+
+        // 앞으로 3년 연애의 흐름
+        List<Report.Item> years = new ArrayList<>();
+        Relation prev = null;
+        for (int y = sajuYear; y < sajuYear + 3; y++) {
+            Pillar p = CALC.yearPillarOf(y);
+            Relation r = yearRelation(chart, y);
+            String tag = p.korean() + "년 · " + r.koreanName();
+            // 천간은 두 해씩 같은 오행이라, 같은 기운이 이어지는 해는 다르게 풀이한다
+            String text = r == prev
+                    ? "앞 해와 같은 " + r.koreanName() + "의 기운이 한 번 더 이어지는 해예요. 앞 해에 시작한 인연이나 변화가 무르익고 자리를 잡기 좋아요. 새로 시작하기보다 지금의 관계를 깊게 만드는 데 마음을 쓰면 좋아요."
+                    : LoveText.FLOW.get(r);
+            prev = r;
+            int score = r == star ? 5 : r == Relation.OUTPUT || r == Relation.RESOURCE ? 4 : 3;
+            if (r == star) tag += " · ★ 인연의 별";
+            if (hap(p.branch(), dayBranch)) { tag += " · 일지 합"; text += " 배우자 자리와 합을 이루어 마음이 통하는 사람을 만나기 쉬워요."; score = Math.min(5, score + 1); }
+            if (chung(p.branch(), dayBranch)) { tag += " · 일지 충"; text += " 배우자 자리와 충을 이루어 관계에 변화가 생기기 쉬운 해예요. 급하게 결정하지 마세요."; score = Math.max(2, score - 1); }
+            years.add(new Report.Item(y + "년", tag, text, score));
+        }
+        b.items("앞으로 3년 연애의 흐름", null, List.of(), years);
+
+        b.text("나와 잘 맞는 상대의 기운", "채워주면 좋은 기운 · " + elementName(chart.weakest()), List.of(LoveText.MATCH.get(chart.weakest())));
+        b.text("연애할 때 조심할 점", "가장 강한 기운 · " + elementName(chart.strongest()), List.of(LoveText.CAUTION.get(chart.strongest())));
+        b.items("연애운을 높이는 체크리스트", "할 수 있는 것부터 하나씩 체크해 보세요.", List.of(),
+                LoveText.CHECKLIST.stream().map(t -> new Report.Item("☐", null, t)).toList());
         return b.build();
     }
 

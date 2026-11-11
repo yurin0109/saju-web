@@ -79,6 +79,8 @@ public record ProfileResponse(
                        List<Long> compatPartners,
                        YearDto thisYear, CareerDto career, MarriageDto marriage,
                        Report reunion, Report family, Report study, Reports.ConcernDto concern,
+                       /** 연애운 (애정운) 무료 기본 풀이 */
+                       Report love,
                        /** 내 사주에 있는 신살 (역마살 · 도화살 · 천을귀인 …) + 전체 신살 설명 */
                        List<ShinSal.Found> shinsal, List<ShinSal.Info> shinsalGuide) {}
 
@@ -162,6 +164,7 @@ public record ProfileResponse(
                         Reports.familyBasic(p.getName(), chart),
                         Reports.studyBasic(p.getName(), chart, currentSajuYear),
                         Reports.concern(p.getConcernType(), p.getConcernText(), p.getName(), chart, currentSajuYear),
+                        Reports.loveBasic(p.getName(), p.getGender(), chart, currentSajuYear),
                         ShinSal.find(chart), ShinSal.all()));
     }
 }

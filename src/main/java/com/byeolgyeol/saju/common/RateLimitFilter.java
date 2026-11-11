@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * - 조회(GET): 1분에 1200번
  * - 저장 · 수정 · 삭제 · 결제(POST/PUT/DELETE): 1분에 120번
  * - 로그인 · 회원가입: 1분에 20번 (+ 계정마다 비밀번호 5번 틀리면 10분 잠금)
+ * - 관리자 API: 1분에 60번 (+ 관리자 비밀번호 10번 틀리면 15분 잠금)
  * (발표장처럼 여러 명이 같은 와이파이 = 같은 IP로 접속해도 막히지 않을 만큼 넉넉하게 잡았다)
  * 넘으면 429 + 안내 문구. 서버 한 대(EB 단일 인스턴스) 기준이라 메모리에 센다.
  */
@@ -31,6 +32,7 @@ public class RateLimitFilter implements Filter {
     static final int READ_LIMIT = 1200;
     static final int WRITE_LIMIT = 120;
     static final int AUTH_LIMIT = 20;
+    static final int ADMIN_LIMIT = 60;
     private static final long WINDOW_MS = 60_000;
     private static final int MAX_KEYS = 50_000;
 
@@ -47,8 +49,9 @@ public class RateLimitFilter implements Filter {
         boolean write = !"GET".equalsIgnoreCase(request.getMethod()) && !"HEAD".equalsIgnoreCase(request.getMethod());
         // 로그인 · 가입은 비밀번호 대입 공격을 막으려고 훨씬 적게 허용
         boolean auth = write && request.getRequestURI().startsWith("/api/auth/");
-        String key = (auth ? "a:" : write ? "w:" : "r:") + clientIp(request);
-        int limit = auth ? AUTH_LIMIT : write ? WRITE_LIMIT : READ_LIMIT;
+        boolean admin = request.getRequestURI().startsWith("/api/admin/");   // 관리자 API 도 비밀번호 대입 방지로 적게
+        String key = (admin ? "m:" : auth ? "a:" : write ? "w:" : "r:") + clientIp(request);
+        int limit = admin ? ADMIN_LIMIT : auth ? AUTH_LIMIT : write ? WRITE_LIMIT : READ_LIMIT;
         if (!allow(key, limit, System.currentTimeMillis())) {
             HttpServletResponse response = (HttpServletResponse) res;
             response.setStatus(429);

@@ -44,7 +44,7 @@ const state = {
   products: [],
   purchases: [],
   payFor: null,          // { profileId, code }
-  loveView: (['marriage', 'compat', 'reunion'].includes(readStore('saju.loveView')) ? readStore('saju.loveView') : 'compat'),
+  loveView: (['love', 'marriage', 'compat', 'reunion'].includes(readStore('saju.loveView')) ? readStore('saju.loveView') : 'love'),
   partnerId: null,
   workView: (readStore('saju.workView') === 'study' ? 'study' : 'career'),
   editingReflection: null,
@@ -98,7 +98,7 @@ const product = code => state.products.find(x => x.code === code);
 const owns = (p, code) => !!p && p.saju.owned.includes(code);
 /** 궁합은 상대 1명마다 따로 산다: 그 상대로 산 기록이 있을 때만 열림 (묶음에도 궁합은 없음) */
 const ownsCompat = (p, partnerId) => !!p && (p.saju.compatPartners || []).map(String).includes(String(partnerId));
-/** 묶음으로 열리는 6종 (궁합 제외) */
+/** 묶음으로 열리는 7종 (궁합 제외) */
 const BUNDLE_CODES = () => REPORT_CODES.filter(c => c !== 'COMPAT');
 const won = n => n.toLocaleString('ko-KR') + '원';
 
@@ -228,6 +228,7 @@ function renderResult() {
       <h1 class="title">${esc(p.name)} 님의 사주, 한눈에 보기</h1>
       <p class="lead">타고난 여덟 글자와 오행 분포, 나를 나타내는 핵심 성향을 확인해보세요.</p>
     </div>
+    ${concernNotice(p)}
 
     <div class="card profile-bar">
       <span class="profile-name">${esc(p.name)} 님 <span class="tag">나의 프로필</span></span>
@@ -349,18 +350,27 @@ function shinsalCard(p) {
 function concernCard(p) {
   const c = p.saju.concern;
   if (!c) return `
-    <div class="card concern-card">
+    <div class="card concern-card" id="concern">
       <span class="eyebrow">고민 맞춤 풀이</span>
       <h3>요즘 고민이 있다면 알려주세요</h3>
       <p class="body">사주 정보를 수정해서 요즘 가장 큰 고민을 적으면, ${esc(p.name)} 님의 사주로 그 고민을 함께 들여다보고 가장 잘 맞는 리포트를 추천해드려요.</p>
       <button class="btn btn-ghost" style="align-self:flex-start" data-edit="${p.id}">고민 적으러 가기 ↗</button>
     </div>`;
   const info = REPORT_INFO[c.product], pr = product(c.product), open = owns(p, c.product);
+  const [empathy, insight, approach, timing] = c.paragraphs;
   return `
-    <div class="card concern-card">
-      <div class="crumb-row"><span class="eyebrow">고민 맞춤 풀이</span><span class="tag">${esc(c.label)}</span></div>
+    <div class="card concern-card" id="concern">
+      <div class="crumb-row"><span class="eyebrow">고민 맞춤 풀이</span><span class="tag">${esc(c.label)}${c.topic && c.topic !== c.label ? ' · ' + esc(c.topic) : ''}</span></div>
       <h3>${esc(p.name)} 님의 고민, 별에게 물어봤어요</h3>
-      ${c.paragraphs.map(t => `<p class="body">${esc(t)}</p>`).join('')}
+      ${c.text ? `<blockquote class="concern-quote">${esc(c.text)}</blockquote>` : ''}
+      <p class="body">${esc(c.text ? empathy.replace(/^“[\s\S]*?” — /, '') : empathy)}</p>
+      <div class="concern-part"><h4>🔮 사주로 보면</h4><p class="body">${esc(insight)}</p><p class="body">${esc(approach)}</p></div>
+      <div class="concern-part"><h4>🗓️ 올해의 흐름</h4><p class="body">${esc(timing)}</p></div>
+      ${c.steps?.length ? `<div class="concern-part"><h4>✅ 지금 해볼 수 있는 일</h4>
+        <ol class="concern-steps">${c.steps.map(t => `<li>${esc(t)}</li>`).join('')}</ol></div>` : ''}
+      ${c.question ? `<div class="concern-ask"><span>스스로에게 물어보기</span><p>${esc(c.question)}</p>
+        <small>답이 떠오르면 위의 성찰 질문 칸이나 성찰 일기에 적어두세요.</small></div>` : ''}
+      <button type="button" class="concern-miss" data-concern-miss>🙁 풀이가 내 고민과 잘 안 맞아요 · 알려주기</button>
       <div class="concern-cta">
         <p>${info.icon} ${esc(c.pitch)}</p>
         ${open ? `<button class="btn btn-ghost" data-goreport="${c.product}">심화 리포트 보기 ↗</button>`
@@ -369,6 +379,15 @@ function concernCard(p) {
       </div>
     </div>`;
 }
+/** 결과 화면 위쪽 안내: 적은 고민의 풀이가 아래에 있다고 알려주고 바로 이동 */
+function concernNotice(p) {
+  if (!p.saju.concern) return '';
+  return `<button type="button" class="concern-notice" data-scroll="concern">📝 적어주신 고민(${esc(p.saju.concern.topic || p.saju.concern.label)})에 대한 풀이가 이 페이지 아래에 있어요 <b>바로 보기 ↓</b></button>`;
+}
+document.addEventListener('click', e => {
+  const s = e.target.closest('[data-scroll]');
+  if (s) document.getElementById(s.dataset.scroll)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 
 /* ════════════════════════════════════════════
    탭 4. 올해 운세
@@ -815,6 +834,8 @@ const REPORT_INFO = {
           preview: ['올해 총론 심화', '이번 달부터 12개월 월별 흐름', '분기별 실천 플랜', '영역별 풀이 (일 · 재물 · 관계 · 컨디션)', '나의 오행으로 본 올해', '올해의 행운 포인트'] },
   CAREER: { icon: '🧭', name: () => '직장운', go: ['career', 'career'],
           preview: ['일하는 스타일 심화', '십성 분포로 본 일의 힘', '강점 · 약점 · 보완할 기운', '직장 안에서의 관계', '앞으로 3년 일의 흐름', '잘 맞는 일 TOP 4'] },
+  LOVE: { icon: '💗', name: () => '연애운', go: ['marriage', 'love'],
+          preview: ['한눈에 보는 연애운', '나의 연애 스타일 심화', '이성 인연의 별 · 나의 매력 포인트', '인연이 들어오기 좋은 달 TOP 3', '앞으로 3년 연애의 흐름', '잘 맞는 상대 · 조심할 점 · 연애운 체크리스트'] },
   MARRIAGE: { icon: '💍', name: () => '결혼운', go: ['marriage', 'marriage'],
           preview: ['한눈에 보는 결혼운', '나의 배우자상과 결혼 시기', '앞으로 6년 결혼의 흐름', '결혼 생활 스타일', '가정 경제와 역할 분담', '부부 갈등을 줄이는 법 · 결혼 준비 체크리스트'] },
   COMPAT: { icon: '💞', name: () => '궁합', go: ['marriage', 'compat'],
@@ -826,7 +847,7 @@ const REPORT_INFO = {
   FAMILY: { icon: '🏡', name: () => '가족운', go: ['family'],
           preview: ['어린 시절 (년주)', '부모 · 형제 자리 심화', '형제 · 동료의 기운', '자녀 자리 (시주)', '가족과 건강한 거리 두기', '앞으로 3년 가족의 흐름'] },
 };
-const REPORT_CODES = ['YEAR', 'CAREER', 'STUDY', 'MARRIAGE', 'COMPAT', 'REUNION', 'FAMILY'];
+const REPORT_CODES = ['YEAR', 'CAREER', 'STUDY', 'LOVE', 'MARRIAGE', 'COMPAT', 'REUNION', 'FAMILY'];
 
 /** 리포트가 있는 화면으로 이동 */
 function goReport(code) {
@@ -846,7 +867,7 @@ function buyButtons(p, code) {
   const bundleUseful = BUNDLE_CODES().some(c => !owns(p, c));
   return `
     <button class="btn btn-primary" data-buy="${code}">${one ? won(one.price) : ''} · 심화 리포트 열기</button>
-    ${bundleUseful && bundle ? `<button class="btn btn-ghost" data-buy="BUNDLE">6종 묶음 ${won(bundle.price)}</button>` : ''}`;
+    ${bundleUseful && bundle ? `<button class="btn btn-ghost" data-buy="BUNDLE">7종 묶음 ${won(bundle.price)}</button>` : ''}`;
 }
 
 /** 각 탭 아래에 붙는 심화 리포트 자리 */
@@ -897,7 +918,7 @@ async function mountPremium(root, p, code, partner) {
   }
 }
 
-/** 내 결과 하단: 심화 리포트 7종 카드 (묶음은 궁합 뺀 6종) */
+/** 내 결과 하단: 심화 리포트 8종 카드 (묶음은 궁합 뺀 7종) */
 function paidSection(p) {
   const bundle = product('BUNDLE');
   const singleSum = BUNDLE_CODES().reduce((n, c) => n + (product(c)?.price || 0), 0);
@@ -927,9 +948,9 @@ function paidSection(p) {
     </div>
     <div class="paid-grid">${cards}</div>
     ${!all && bundle ? `<div class="bundle-bar">
-      <div><h3>심화 리포트 6종 한 번에 <small>(궁합은 상대마다 따로)</small></h3>
+      <div><h3>심화 리포트 7종 한 번에 <small>(궁합은 상대마다 따로)</small></h3>
         <span class="save">따로 사면 ${won(singleSum)} → 묶음 ${won(bundle.price)} (${won(singleSum - bundle.price)} 할인)</span></div>
-      <button class="btn btn-primary" data-buy="BUNDLE">6종 묶음 구매 ↗</button>
+      <button class="btn btn-primary" data-buy="BUNDLE">7종 묶음 구매 ↗</button>
     </div>` : ''}`;
 }
 
@@ -1182,6 +1203,19 @@ const ART = {
       <animateTransform attributeName="transform" type="translate" values="0 0;0 -4;0 0" dur="2.4s" repeatCount="indefinite"/></path>
     ${[[30, 30, 2.4], [192, 26, 2], [200, 96, 1.8], [24, 90, 2]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" opacity=".7"><animate attributeName="opacity" values=".2;1;.2" dur="${2 + r}s" repeatCount="indefinite"/></circle>`).join('')}
   </svg>`,
+  letter: () => `<svg class="art" viewBox="0 0 220 140" aria-hidden="true">
+    <defs><linearGradient id="lt1" x1="0" x2="1"><stop offset="0" stop-color="#ffd1ec"/><stop offset="1" stop-color="#f6b3d8"/></linearGradient>
+      <linearGradient id="lt2" x1="0" x2="1"><stop offset="0" stop-color="#ff70cf"/><stop offset="1" stop-color="#ff9a7a"/></linearGradient></defs>
+    <g><animateTransform attributeName="transform" type="translate" values="0 0;0 -3;0 0" dur="3s" repeatCount="indefinite"/>
+      <rect x="55" y="46" width="110" height="72" rx="8" fill="url(#lt1)"/>
+      <path d="M55 52 L110 92 L165 52" fill="none" stroke="#e58fc0" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M110 100 C 98 91, 94 84, 98 78 C 102 72, 108 74, 110 79 C 112 74, 118 72, 122 78 C 126 84, 122 91, 110 100 z" fill="url(#lt2)"/></g>
+    <path d="M168 34 C 162 29, 160 25, 163 22 C 165 19, 168 20, 168 23 C 168 20, 171 19, 173 22 C 176 25, 174 29, 168 34 z" fill="#ff70cf" opacity=".8">
+      <animate attributeName="opacity" values=".3;.9;.3" dur="2.2s" repeatCount="indefinite"/></path>
+    <path d="M44 40 C 40 37, 39 34, 41 32 C 43 30, 45 31, 45 33 C 45 31, 47 30, 49 32 C 51 34, 50 37, 44 40 z" fill="#ffb3e0" opacity=".7">
+      <animate attributeName="opacity" values=".9;.3;.9" dur="2.6s" repeatCount="indefinite"/></path>
+    ${[[30, 96, 2], [196, 82, 2.2], [186, 116, 1.6], [70, 22, 1.8]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" opacity=".7"><animate attributeName="opacity" values=".2;1;.2" dur="${2 + r}s" repeatCount="indefinite"/></circle>`).join('')}
+  </svg>`,
   heart: () => `<svg class="art-heart" viewBox="0 0 60 54" aria-hidden="true">
     <defs><linearGradient id="hg" x1="0" x2="1"><stop offset="0" stop-color="#ff70cf"/><stop offset="1" stop-color="#ff9a7a"/></linearGradient></defs>
     <path d="M30 50 C 8 34, 2 22, 8 12 C 14 2, 26 4, 30 14 C 34 4, 46 2, 52 12 C 58 22, 52 34, 30 50 z" fill="url(#hg)">
@@ -1199,11 +1233,11 @@ function compatHero(me, partner, score) {
 
 function renderLove() {
   const wrap = document.getElementById('marriage-root');
-  const views = [['compat', '💞 궁합'], ['reunion', '🌙 재회운'], ['marriage', '💍 결혼운']];
+  const views = [['love', '💗 연애운'], ['compat', '💞 궁합'], ['reunion', '🌙 재회운'], ['marriage', '💍 결혼운']];
   wrap.innerHTML = `<div class="sub-tabs love-tabs" role="tablist">${views.map(([k, l]) =>
     `<button type="button" data-love="${k}" aria-selected="${state.loveView === k}">${l}</button>`).join('')}</div>
     <div id="love-body" style="margin-top:28px"></div>`;
-  ({ marriage: renderMarriage, compat: renderCompat, reunion: renderReunion })[state.loveView]();
+  ({ love: renderLoveFortune, marriage: renderMarriage, compat: renderCompat, reunion: renderReunion })[state.loveView]();
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-love]');
@@ -1258,6 +1292,19 @@ async function renderCompat() {
     root.querySelector('#compat-basic').innerHTML = `<p class="notice">궁합을 불러오지 못했어요. (${esc(err.message)})</p>`;
   }
   mountPremium(root, p, 'COMPAT', state.partnerId);
+}
+
+/** 사랑운 · 연애운(애정운): 연애 스타일 + 올해 인연의 흐름 (무료) + 심화 리포트 */
+function renderLoveFortune() {
+  const root = document.getElementById('love-body');
+  const p = current();
+  if (!p) { root.innerHTML = emptyTopic('💗', '연애운'); return; }
+  root.innerHTML = simpleFrame(p, { code: 'LOVE', crumb: '연애운', tag: '💗 연애운',
+    eyebrow: '사랑운 · 연애운(애정운)', title: `${esc(p.name)} 님의 연애운`,
+    lead: '나를 나타내는 글자(일간)로 연애 스타일을, 올해 들어오는 기운으로 인연의 흐름을 읽어요. 결혼운이 가정을 꾸리는 일을 본다면, 연애운은 사람을 만나고 마음을 주고받는 방식을 봐요.',
+    main: `<div class="topic-hero love-hero art-hero">${ART.letter()}
+        <span><span class="lbl">마음이 닿는 순간</span><br><span class="val">설렘의 편지</span></span></div>` + reportHtml(p.saju.love) });
+  mountPremium(root, p, 'LOVE');
 }
 
 function renderReunion() {
@@ -2055,6 +2102,61 @@ document.addEventListener('click', e => {
   if (o) { document.getElementById('buys').classList.remove('open'); openAuth(o.dataset.authOpen); }
 });
 
+/* ════════════════════════════════════════════
+   의견 보내기 (건의사항) → 관리자 페이지(/admin.html)에서 확인
+   ════════════════════════════════════════════ */
+const fbModal = document.getElementById('fb');
+let fbCat = null, fbPage = null;
+/** preset: { cat, text, page, hint } — "풀이가 안 맞아요"처럼 내용을 미리 채워서 열 때 */
+function openFeedback(preset = {}) {
+  fbCat = preset.cat || null; fbPage = preset.page || null;
+  fbModal.querySelectorAll('[data-fbcat]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.fbcat === fbCat)));
+  document.getElementById('fb-title').textContent = preset.title || '의견 보내기';
+  document.getElementById('fb-text').value = preset.text || '';
+  document.getElementById('fb-count').textContent = `${(preset.text || '').length} / 1000`;
+  document.getElementById('fb-error').textContent = '';
+  fbModal.classList.add('open');
+}
+function closeFeedback() { fbModal.classList.remove('open'); }
+document.getElementById('fb-open').onclick = () => openFeedback();
+document.getElementById('fb-close').onclick = closeFeedback;
+document.getElementById('fb-cancel').onclick = closeFeedback;
+fbModal.addEventListener('click', e => {
+  if (e.target === fbModal) return closeFeedback();
+  const c = e.target.closest('[data-fbcat]');
+  if (c) { fbCat = c.dataset.fbcat; fbModal.querySelectorAll('[data-fbcat]').forEach(b => b.setAttribute('aria-pressed', String(b === c))); }
+});
+document.addEventListener('click', e => {
+  if (e.target.closest('[data-feedback]')) { e.preventDefault(); openFeedback(); }
+  // 고민 풀이 아래 "풀이가 안 맞아요": 내 고민과 받은 풀이를 미리 채워서 열기 → 관리자 페이지에서 보고 단어를 추가한다
+  if (e.target.closest('[data-concern-miss]')) {
+    const c = current()?.saju.concern;
+    if (!c) return;
+    const text = `[내가 적은 고민]\n${c.text || '(문장 없이 분류만 고름: ' + c.label + ')'}\n\n[받은 풀이]\n${c.topic || c.label} 주제로 풀이가 나왔어요.\n\n[어떤 점이 안 맞았나요? 원했던 답은?]\n`;
+    openFeedback({ cat: 'READING', page: 'concern', title: '풀이가 안 맞았다면 알려주세요', text });
+    const ta = document.getElementById('fb-text');
+    setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 50);
+  }
+});
+document.getElementById('fb-text').addEventListener('input', e => {
+  document.getElementById('fb-count').textContent = `${e.target.value.length} / 1000`;
+  document.getElementById('fb-error').textContent = '';
+});
+document.getElementById('fb-send').onclick = async () => {
+  const err = document.getElementById('fb-error'), message = document.getElementById('fb-text').value.trim();
+  if (!fbCat) { err.textContent = '어떤 의견인지 골라주세요.'; return; }
+  if (message.length < 5) { err.textContent = '내용을 5자 이상 적어주세요.'; return; }
+  if (fbPage === 'concern' && /\[어떤 점이 안 맞았나요\? 원했던 답은\?\]\s*$/.test(message)) { err.textContent = '어떤 점이 안 맞았는지 한 줄만 적어주세요.'; return; }
+  const btn = document.getElementById('fb-send'); btn.disabled = true;
+  const tab = document.querySelector('.tab[aria-selected="true"]')?.dataset.tab || 'home';
+  const page = fbPage || (tab === 'marriage' ? 'love-' + state.loveView : tab === 'career' ? 'work-' + state.workView : tab);
+  try {
+    await request('/api/feedback', { method: 'POST', body: JSON.stringify({ category: fbCat, message, page }) });
+    closeFeedback(); toast('의견을 보냈어요. 고마워요! 💌');
+  } catch (x) { err.textContent = x.message; }
+  finally { btn.disabled = false; }
+};
+
 (async function init() {
   try { await Promise.all([loadMe(), loadProfiles(), loadReflections(), loadShop(), loadPayConfig()]); }
   catch (err) { toast('서버에 연결하지 못했어요'); }
@@ -2064,6 +2166,6 @@ document.addEventListener('click', e => {
   if (back?.love) state.loveView = back.love;
   if (start === 'journal') { state.listView = start; start = 'list'; }
   if (start.startsWith('work-')) { state.workView = start.slice(5) === 'study' ? 'study' : 'career'; start = 'career'; }
-  if (start.startsWith('love-')) { const v = start.slice(5); if (['marriage', 'compat', 'reunion'].includes(v)) state.loveView = v; start = 'marriage'; }
+  if (start.startsWith('love-')) { const v = start.slice(5); if (['love', 'marriage', 'compat', 'reunion'].includes(v)) state.loveView = v; start = 'marriage'; }
   showTab(['home', 'input', 'result', 'year', 'career', 'marriage', 'family', 'list'].includes(start) ? start : 'home');
 })();

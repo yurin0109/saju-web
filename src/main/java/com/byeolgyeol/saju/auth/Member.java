@@ -84,6 +84,12 @@ public class Member {
 
     public void changeRecovery(String hash) { this.recoveryHash = hash; }
 
+    /** 관리자가 잠금 해제 */
+    public void unlock() { this.lockedUntil = null; this.failedCount = 0; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getLastLoginAt() { return lastLoginAt; }
+
     public String getRecoveryHash() { return recoveryHash; }
 
     public Long getId() { return id; }

@@ -13,4 +13,6 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
     boolean existsByOwnerKey(String ownerKey);
 
     Optional<Member> findByRecoveryHash(String recoveryHash);
+
+    java.util.List<Member> findTop300ByOrderByCreatedAtDesc();
 }
