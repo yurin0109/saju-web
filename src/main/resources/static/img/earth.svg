@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><title>토 · 꿀빛 흙곰</title>
+<circle cx="32" cy="32" r="32" fill="#4d3a18"/>
+<circle cx="16" cy="20" r="8" fill="#c08a3e"/><circle cx="48" cy="20" r="8" fill="#c08a3e"/>
+<circle cx="16" cy="20" r="4" fill="#8a5d22"/><circle cx="48" cy="20" r="4" fill="#8a5d22"/>
+<circle cx="32" cy="36" r="19" fill="#c08a3e"/>
+<ellipse cx="32" cy="44" rx="9" ry="7" fill="#f2d39a"/>
+<circle cx="25" cy="34" r="2.6" fill="#2a1a08"/><circle cx="39" cy="34" r="2.6" fill="#2a1a08"/>
+<circle cx="25.9" cy="33.1" r=".9" fill="#fff"/><circle cx="39.9" cy="33.1" r=".9" fill="#fff"/>
+<ellipse cx="32" cy="41" rx="3.2" ry="2.2" fill="#3a2410"/>
+<path d="M29 46 Q32 49 35 46" stroke="#3a2410" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+<circle cx="20" cy="41" r="2.2" fill="#ff9f8f" opacity=".55"/><circle cx="44" cy="41" r="2.2" fill="#ff9f8f" opacity=".55"/>
+<path d="M28 19 Q32 15 36 19 Q32 22 28 19Z" fill="#ffd25e"/>
+</svg>
