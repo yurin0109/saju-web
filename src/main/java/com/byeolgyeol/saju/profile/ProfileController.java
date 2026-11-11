@@ -16,8 +16,9 @@ import java.util.List;
  * POST   /api/profiles        사주 등록
  * PUT    /api/profiles/{id}   사주 정보 수정
  * DELETE /api/profiles/{id}   사주 삭제
- * GET    /api/profiles/{id}/partners          궁합 상대 목록
- * POST   /api/profiles/{id}/partners          궁합 상대 입력 (첫 상대 무료)
+ * GET    /api/profiles/{id}/partners?kind=COMPAT|REUNION   궁합 · 재회운 상대 목록
+ * POST   /api/profiles/{id}/partners?kind=COMPAT|REUNION   상대 입력 (종류마다 첫 상대 무료)
+ * GET    /api/profiles/{id}/reunion?partnerId=            재회운 기본 풀이 (두 사람 기준)
  * DELETE /api/profiles/{id}/partners/{pid}    궁합 상대 삭제
  *
  * 모든 요청은 X-Client-Id 헤더(브라우저별 고유 ID)로 내 데이터만 다룬다.
@@ -66,16 +67,25 @@ public class ProfileController {
 
     /** 궁합 상대 목록 (이 사주에 입력한 상대만) */
     @GetMapping("/{id}/partners")
-    public List<ProfileService.PartnerDto> partners(@RequestHeader(CLIENT_HEADER) String clientId, @PathVariable("id") Long id) {
-        return service.partners(ClientId.check(clientId), id);
+    public List<ProfileService.PartnerDto> partners(@RequestHeader(CLIENT_HEADER) String clientId, @PathVariable("id") Long id,
+                                                    @RequestParam(value = "kind", defaultValue = "COMPAT") String kind) {
+        return service.partners(ClientId.check(clientId), id, kind);
     }
 
     /** 궁합 상대 입력 (첫 상대는 무료로 궁합을 볼 수 있음) */
     @PostMapping("/{id}/partners")
     @ResponseStatus(HttpStatus.CREATED)
     public ProfileService.PartnerDto addPartner(@RequestHeader(CLIENT_HEADER) String clientId, @PathVariable("id") Long id,
+                                                @RequestParam(value = "kind", defaultValue = "COMPAT") String kind,
                                                 @Valid @RequestBody ProfileRequest request) {
-        return service.addPartner(ClientId.check(clientId), id, request);
+        return service.addPartner(ClientId.check(clientId), id, kind, request);
+    }
+
+    /** 재회운 기본 풀이 (두 사람 기준, 첫 상대 무료) */
+    @GetMapping("/{id}/reunion")
+    public Report reunion(@RequestHeader(CLIENT_HEADER) String clientId, @PathVariable("id") Long id,
+                          @RequestParam(value = "partnerId") Long partnerId) {
+        return service.reunion(ClientId.check(clientId), id, partnerId);
     }
 
     @DeleteMapping("/{id}/partners/{partnerId}")

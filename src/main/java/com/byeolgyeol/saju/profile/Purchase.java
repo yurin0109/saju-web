@@ -29,7 +29,7 @@ public class Purchase {
     @Column(name = "product_code", nullable = false, length = 20)
     private String productCode;
 
-    /** 궁합(COMPAT)은 상대마다 따로 산다 → 어떤 상대와의 궁합인지 */
+    /** 궁합 · 재회운은 상대마다 따로 산다 → 어떤 상대인지 */
     @Column(name = "partner_id")
     private Long partnerId;
 
@@ -57,7 +57,7 @@ public class Purchase {
         this.profileId = profileId;
         this.productCode = product.name();
         this.price = product.price();
-        this.partnerId = product == Product.COMPAT ? partnerId : null;
+        this.partnerId = product.perPartner() ? partnerId : null;
     }
 
     @PrePersist

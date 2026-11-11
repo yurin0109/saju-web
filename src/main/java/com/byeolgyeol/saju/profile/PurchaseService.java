@@ -44,19 +44,27 @@ public class PurchaseService {
     public Set<Product> owned(String clientId, Long profileId) {
         return Product.owned(repository.findByClientIdAndProfileId(clientId, profileId).stream()
                 .filter(Purchase::isActive)
-                .map(Purchase::getProduct).filter(p -> p != Product.COMPAT).toList());
+                .map(Purchase::getProduct).filter(p -> !p.perPartner()).toList());
     }
 
-    /** 궁합 단품으로 열린 상대 프로필 목록 */
-    public List<Long> compatPartners(String clientId, Long profileId) {
+    /** 상대마다 사는 상품(궁합 · 재회운)으로 열린 상대 목록 */
+    public List<Long> partnersFor(String clientId, Long profileId, Product product) {
         return repository.findByClientIdAndProfileId(clientId, profileId).stream()
-                .filter(p -> p.isActive() && p.getProduct() == Product.COMPAT && p.getPartnerId() != null)
+                .filter(p -> p.isActive() && p.getProduct() == product && p.getPartnerId() != null)
                 .map(Purchase::getPartnerId).distinct().toList();
     }
 
-    /** 이 상대와의 궁합 심화를 볼 수 있는지: 이 상대로 구매한 기록이 있을 때만 */
+    public List<Long> compatPartners(String clientId, Long profileId) {
+        return partnersFor(clientId, profileId, Product.COMPAT);
+    }
+
+    /** 이 상대로 구매한 기록이 있는지 */
+    public boolean ownsPartner(String clientId, Long profileId, Product product, Long partnerId) {
+        return partnerId != null && partnersFor(clientId, profileId, product).contains(partnerId);
+    }
+
     public boolean ownsCompat(String clientId, Long profileId, Long partnerId) {
-        return partnerId != null && compatPartners(clientId, profileId).contains(partnerId);
+        return ownsPartner(clientId, profileId, Product.COMPAT, partnerId);
     }
 
     /**
@@ -76,9 +84,9 @@ public class PurchaseService {
         }
     }
 
-    public void requireCompat(String clientId, Long profileId, Long partnerId) {
-        if (!ownsCompat(clientId, profileId, partnerId)) {
-            throw new LockedException("이 상대와의 궁합 심화 리포트를 구매하면 볼 수 있어요.");
+    public void requirePartner(String clientId, Long profileId, Product product, Long partnerId) {
+        if (!ownsPartner(clientId, profileId, product, partnerId)) {
+            throw new LockedException("이 상대와의 " + product.title() + "를 구매하면 볼 수 있어요.");
         }
     }
 
@@ -92,14 +100,15 @@ public class PurchaseService {
         } catch (IllegalArgumentException | NullPointerException e) {
             throw new IllegalArgumentException("없는 상품이에요.");
         }
-        if (product == Product.COMPAT) {
-            // 궁합은 상대가 꼭 있어야 하고, 내가 저장한 다른 프로필이어야 한다
-            if (partnerId == null) throw new IllegalArgumentException("궁합을 볼 상대를 선택해주세요.");
-            if (partnerId.equals(p.getId())) throw new IllegalArgumentException("나와 다른 사람을 선택해주세요.");
+        if (product.perPartner()) {
+            // 궁합 · 재회운은 상대가 꼭 있어야 하고, 이 사주에 그 종류로 입력한 상대여야 한다
+            if (partnerId == null) throw new IllegalArgumentException("상대를 먼저 입력해주세요.");
             Profile partner = profileRepository.findByIdAndClientId(partnerId, clientId)
-                    .orElseThrow(() -> new NoSuchElementException("상대 사주 프로필을 찾을 수 없어요."));
-            if (!p.getId().equals(partner.getPartnerOf())) throw new NoSuchElementException("궁합 상대를 찾을 수 없어요.");
-            if (ownsCompat(clientId, p.getId(), partnerId)) throw new IllegalArgumentException("이미 구매한 궁합이에요.");
+                    .orElseThrow(() -> new NoSuchElementException("상대 정보를 찾을 수 없어요."));
+            if (!p.getId().equals(partner.getPartnerOf()) || !product.name().equals(partner.getPartnerKind())) {
+                throw new NoSuchElementException("상대 정보를 찾을 수 없어요.");
+            }
+            if (ownsPartner(clientId, p.getId(), product, partnerId)) throw new IllegalArgumentException("이미 구매한 리포트예요.");
             return product;
         }
         if (!product.addsSomething(owned(clientId, p.getId()))) {
@@ -118,8 +127,8 @@ public class PurchaseService {
         for (Purchase p : repository.findByClientIdAndProfileId(clientId, profileId)) {
             if (!p.isActive() || p.getOpenedAt() != null) continue;
             Product bought = p.getProduct();
-            boolean covers = report == Product.COMPAT
-                    ? bought == Product.COMPAT && java.util.Objects.equals(p.getPartnerId(), partnerId)
+            boolean covers = report.perPartner()
+                    ? bought == report && java.util.Objects.equals(p.getPartnerId(), partnerId)
                     : bought == report || (bought == Product.BUNDLE && Product.BUNDLE_REPORTS.contains(report));
             if (covers) {
                 p.markOpened(now);

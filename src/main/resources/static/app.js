@@ -98,8 +98,12 @@ const product = code => state.products.find(x => x.code === code);
 const owns = (p, code) => !!p && p.saju.owned.includes(code);
 /** 궁합은 상대 1명마다 따로 산다: 그 상대로 산 기록이 있을 때만 열림 (묶음에도 궁합은 없음) */
 const ownsCompat = (p, partnerId) => !!p && (p.saju.compatPartners || []).map(String).includes(String(partnerId));
-/** 묶음으로 열리는 7종 (궁합 제외) */
-const BUNDLE_CODES = () => REPORT_CODES.filter(c => c !== 'COMPAT');
+/** 묶음으로 열리는 6종 (궁합 · 재회운 제외) */
+const BUNDLE_CODES = () => REPORT_CODES.filter(c => !PER_PARTNER.includes(c));
+/** 상대 1명마다 따로 사는 리포트 (궁합 · 재회운) */
+const PER_PARTNER = ['COMPAT', 'REUNION'];
+const ownsPartner = (p, code, partnerId) => !!p && ((code === 'REUNION' ? p.saju.reunionPartners : p.saju.compatPartners) || [])
+  .map(String).includes(String(partnerId));
 const won = n => n.toLocaleString('ko-KR') + '원';
 
 async function loadReflections() {
@@ -374,7 +378,7 @@ function concernCard(p) {
       <div class="concern-cta">
         <p>${info.icon} ${esc(c.pitch)}</p>
         ${open ? `<button class="btn btn-ghost" data-goreport="${c.product}">심화 리포트 보기 ↗</button>`
-               : c.product === 'COMPAT' ? `<button class="btn btn-primary" data-goreport="COMPAT">궁합 볼 상대 고르기 ↗</button>`
+               : PER_PARTNER.includes(c.product) ? `<button class="btn btn-primary" data-goreport="${c.product}">상대 입력하러 가기 ↗</button>`
                : `<button class="btn btn-primary" data-buy="${c.product}">${pr ? won(pr.price) : ''} · ${info.name()} 심화 리포트 열기</button>`}
       </div>
     </div>`;
@@ -841,7 +845,7 @@ const REPORT_INFO = {
   COMPAT: { icon: '💞', name: () => '궁합', go: ['marriage', 'compat'],
           preview: ['두 사람의 기운 심화', '생활 리듬 (배우자 자리)', '서로 채워주는 오행', '갈등을 줄이는 대화법', '함께하면 좋은 활동'] },
   REUNION: { icon: '🌙', name: () => '재회운', go: ['marriage', 'reunion'],
-          preview: ['다시 이어지는 관계의 조건', '관계에서 반복되기 쉬운 패턴', '앞으로 3년 재회의 흐름', '마음 정리 가이드 5단계'] },
+          preview: ['다시 이어지기 위한 조건', '관계에서 반복되기 쉬운 패턴', '서로에게 채워주던 기운', '앞으로 3년 재회의 흐름', '다시 연락하기 전 체크 · 마음 정리 가이드'] },
   STUDY: { icon: '📚', name: () => '학업운', go: ['career', 'study'],
           preview: ['한눈에 보는 학업운', '공부 스타일 심화', '나에게 맞는 공부법', '시험 · 자격증 운', '앞으로 3년 학업의 흐름', '잘 맞는 공부 분야 TOP 4 · 슬럼프 관리'] },
   FAMILY: { icon: '🏡', name: () => '가족운', go: ['family'],
@@ -867,7 +871,7 @@ function buyButtons(p, code) {
   const bundleUseful = BUNDLE_CODES().some(c => !owns(p, c));
   return `
     <button class="btn btn-primary" data-buy="${code}">${one ? won(one.price) : ''} · 심화 리포트 열기</button>
-    ${bundleUseful && bundle ? `<button class="btn btn-ghost" data-buy="BUNDLE">7종 묶음 ${won(bundle.price)}</button>` : ''}`;
+    ${bundleUseful && bundle ? `<button class="btn btn-ghost" data-buy="BUNDLE">6종 묶음 ${won(bundle.price)}</button>` : ''}`;
 }
 
 /** 각 탭 아래에 붙는 심화 리포트 자리 */
@@ -879,8 +883,9 @@ async function mountPremium(root, p, code, partner) {
   const el = root.querySelector(`[data-premium="${code}"]`);
   if (!el) return;
   const info = REPORT_INFO[code], pr = product(code);
-  const partnerName = code === 'COMPAT' ? state.profiles.find(x => String(x.id) === String(partner))?.name : null;
-  if (code === 'COMPAT' ? !ownsCompat(p, partner) : !owns(p, code)) {
+  const per = PER_PARTNER.includes(code);
+  const partnerName = per ? (state.partnersBy?.[code] || []).find(x => String(x.id) === String(partner))?.name : null;
+  if (per ? !ownsPartner(p, code, partner) : !owns(p, code)) {
     el.innerHTML = `
       <article class="card premium-card locked">
         <div class="premium-head">
@@ -895,7 +900,7 @@ async function mountPremium(root, p, code, partner) {
         </div>
         <div class="premium-cta">
           <div class="lock-actions">${buyButtons(p, code)}</div>
-          <span class="notice">${code === 'COMPAT' ? `궁합 심화는 <b>상대 1명마다</b> 따로 구매해요. 한 번 구매하면 그 상대와의 궁합만 열려요.` : '한 번 구매하면 이 사주 프로필로 계속 볼 수 있어요.'}</span>
+          <span class="notice">${per ? `${info.name()} 심화는 <b>상대 1명마다</b> 따로 구매해요. 한 번 구매하면 그 상대와의 리포트만 열려요.` : '한 번 구매하면 이 사주 프로필로 계속 볼 수 있어요.'}</span>
         </div>
       </article>`;
     return;
@@ -918,7 +923,7 @@ async function mountPremium(root, p, code, partner) {
   }
 }
 
-/** 내 결과 하단: 심화 리포트 8종 카드 (묶음은 궁합 뺀 7종) */
+/** 내 결과 하단: 심화 리포트 8종 카드 (묶음은 궁합 · 재회운 뺀 6종) */
 function paidSection(p) {
   const bundle = product('BUNDLE');
   const singleSum = BUNDLE_CODES().reduce((n, c) => n + (product(c)?.price || 0), 0);
@@ -926,16 +931,16 @@ function paidSection(p) {
   const rec = p.saju.concern?.product;
   const cards = REPORT_CODES.map(code => {
     const info = REPORT_INFO[code], pr = product(code), open = owns(p, code);
-    const compatPick = code === 'COMPAT' && !open;   // 궁합 단품은 상대를 골라야 해서 궁합 화면으로 보낸다
+    const compatPick = PER_PARTNER.includes(code) && !open;   // 궁합 · 재회운은 상대를 입력해야 해서 그 화면으로 보낸다
     return `
       <div class="card paid-card ${code === rec ? 'rec' : ''}">
         <span class="ch">${info.icon} ${code === rec ? '<b>내 고민 맞춤 추천</b>' : '심화 리포트'}</span>
         <h3>${info.name()}</h3>
         <p>${pr ? esc(pr.includes) : ''}</p>
         <div class="foot">
-          ${open ? '<span class="tag open">✓ 구매 완료</span>' : `<span class="price">${pr ? won(pr.price) : ''}${code === 'COMPAT' ? '<small>/ 1명</small>' : ''}</span>`}
+          ${open ? '<span class="tag open">✓ 구매 완료</span>' : `<span class="price">${pr ? won(pr.price) : ''}${PER_PARTNER.includes(code) ? '<small>/ 1명</small>' : ''}</span>`}
           ${open ? `<button class="btn btn-ghost btn-sm" data-goreport="${code}">리포트 보기 ↗</button>`
-                 : compatPick ? `<button class="btn btn-primary btn-sm" data-goreport="COMPAT">상대 고르기 ↗</button>`
+                 : compatPick ? `<button class="btn btn-primary btn-sm" data-goreport="${code}">상대 입력하기 ↗</button>`
                  : `<button class="btn btn-primary btn-sm" data-buy="${code}">구매하기</button>`}
         </div>
       </div>`;
@@ -948,9 +953,9 @@ function paidSection(p) {
     </div>
     <div class="paid-grid">${cards}</div>
     ${!all && bundle ? `<div class="bundle-bar">
-      <div><h3>심화 리포트 7종 한 번에 <small>(궁합은 상대마다 따로)</small></h3>
+      <div><h3>심화 리포트 6종 한 번에 <small>(궁합 · 재회운은 상대마다 따로)</small></h3>
         <span class="save">따로 사면 ${won(singleSum)} → 묶음 ${won(bundle.price)} (${won(singleSum - bundle.price)} 할인)</span></div>
-      <button class="btn btn-primary" data-buy="BUNDLE">7종 묶음 구매 ↗</button>
+      <button class="btn btn-primary" data-buy="BUNDLE">6종 묶음 구매 ↗</button>
     </div>` : ''}`;
 }
 
@@ -982,12 +987,14 @@ function openPay(code) {
   const p = current(), pr = product(code);
   if (!p || !pr) return toast('먼저 사주를 선택해주세요');
   let partnerId = null, partnerName = '';
-  if (code === 'COMPAT') {
-    const onCompat = document.querySelector('.tab[aria-selected="true"]')?.dataset.tab === 'marriage' && state.loveView === 'compat';
-    const partner = (state.partners || []).find(x => String(x.id) === String(state.partnerId));
-    if (!onCompat || !partner) { goReport('COMPAT'); toast('궁합을 볼 상대를 먼저 골라주세요'); return; }
+  if (PER_PARTNER.includes(code)) {
+    const view = code === 'COMPAT' ? 'compat' : 'reunion';
+    const onView = document.querySelector('.tab[aria-selected="true"]')?.dataset.tab === 'marriage' && state.loveView === view;
+    const partner = (state.partnersBy?.[code] || []).find(x => String(x.id) === String(state.partnerSel?.[code]));
+    if (!onView || !partner) { goReport(code); toast('상대를 먼저 입력하거나 골라주세요'); return; }
     partnerId = partner.id; partnerName = partner.name;
   }
+
   state.payFor = { profileId: p.id, code, partnerId };
   const already = pr.unlocks.filter(c => owns(p, c));
   document.getElementById('pay-title').textContent = pr.title;
@@ -996,7 +1003,7 @@ function openPay(code) {
       <div class="pay-row"><span class="k">상품</span><span>${esc(pr.title)}</span></div>
       <div class="pay-row"><span class="k">구성</span><span>${esc(pr.includes)}</span></div>
       <div class="pay-row"><span class="k">대상 사주</span><span>${esc(p.name)} · ${esc(p.birthDate.replaceAll('-', '.'))}</span></div>
-      ${partnerName ? `<div class="pay-row"><span class="k">궁합 상대</span><span>${esc(partnerName)} (이 상대와의 궁합만 열려요)</span></div>` : ''}
+      ${partnerName ? `<div class="pay-row"><span class="k">상대</span><span>${esc(partnerName)} (이 상대와의 리포트만 열려요)</span></div>` : ''}
       ${already.length ? `<p class="notice">이미 구매한 리포트(${already.map(c => REPORT_INFO[c].name()).join(', ')})가 포함돼 있어요.</p>` : ''}
       <div class="pay-total"><span class="k">결제 금액</span><b>${won(pr.price)}</b></div>
     </div>`;
@@ -1021,12 +1028,15 @@ payModal.addEventListener('click', e => { if (e.target === payModal) closePay();
 /** 구매 후 돌아갈 화면 */
 function returnPlace() {
   const tab = document.querySelector('.tab[aria-selected="true"]')?.dataset.tab || 'result';
-  return { tab, love: state.loveView, partner: state.partnerId };
+  return { tab, love: state.loveView, partner: state.partnerSel?.[state.loveView === 'reunion' ? 'REUNION' : 'COMPAT'] };
 }
 
 async function afterPurchase(code, place) {
   await Promise.all([loadProfiles(), loadShop()]);
-  if (place) { state.loveView = place.love || state.loveView; state.partnerId = place.partner || state.partnerId; }
+  if (place) {
+    state.loveView = place.love || state.loveView;
+    if (place.partner) state.partnerSel = { ...(state.partnerSel || {}), [state.loveView === 'reunion' ? 'REUNION' : 'COMPAT']: String(place.partner) };
+  }
   if (code === 'BUNDLE' || !REPORT_INFO[code]) showTab(place?.tab || 'result');
   else goReport(code);
   toast('구매가 완료됐어요. 심화 리포트가 열렸어요 ✨');
@@ -1160,7 +1170,11 @@ buysModal.addEventListener('click', async e => {
     return;
   }
   const o = e.target.closest('[data-popen]');
-  if (o) { closePurchases(); setCurrent(o.dataset.popen); if (o.dataset.partner) state.partnerId = o.dataset.partner; goReport(o.dataset.code); }
+  if (o) {
+    closePurchases(); setCurrent(o.dataset.popen);
+    if (o.dataset.partner) state.partnerSel = { ...(state.partnerSel || {}), [o.dataset.code]: o.dataset.partner };
+    goReport(o.dataset.code);
+  }
 });
 document.addEventListener('click', e => { if (e.target.closest('[data-buys]')) { e.preventDefault(); openPurchases(); } });
 
@@ -1261,28 +1275,45 @@ function simpleFrame(p, o) {
   </div>`;
 }
 
-async function renderCompat() {
+/* 궁합 · 재회운: 상대를 직접 입력 → 첫 상대 무료, 두 번째 상대부터는 상대마다 결제 */
+const PARTNER_VIEW = {
+  COMPAT: { icon: '💞', crumb: '궁합', eyebrow: '사랑운 · 두 사람의 기운', title: '궁합', api: 'compat',
+    lead: '두 사람의 일간(나를 나타내는 글자)과 일지(배우자 자리), 오행 균형을 비교해 관계의 결을 읽어요.',
+    who: '궁합을 볼 상대', first: '무료 궁합 보기' },
+  REUNION: { icon: '🌙', crumb: '재회운', eyebrow: '사랑운 · 다시 이어지는 인연', title: '재회운', api: 'reunion',
+    lead: '다시 이어지고 싶은(또는 마음을 정리하고 싶은) 사람의 정보를 적으면, 두 사람의 인연과 재회의 흐름을 읽어요.',
+    who: '헤어진 상대', first: '무료 재회운 보기' },
+};
+const renderCompat = () => renderPartnerTopic('COMPAT');
+const renderReunion = () => renderPartnerTopic('REUNION');
+
+async function renderPartnerTopic(kind) {
+  const v = PARTNER_VIEW[kind];
   const root = document.getElementById('love-body');
   const p = current();
-  if (!p) { root.innerHTML = emptyTopic('💞', '궁합'); return; }
+  if (!p) { root.innerHTML = emptyTopic(v.icon, v.crumb); return; }
+  state.partnersBy = state.partnersBy || {}; state.partnerSel = state.partnerSel || {}; state.addingBy = state.addingBy || {};
   let partners = [];
-  try { partners = await request(`/api/profiles/${p.id}/partners`); } catch {}
-  state.partners = partners;
-  if (state.partnerId && !partners.some(x => String(x.id) === String(state.partnerId))) state.partnerId = null;
-  if (!state.partnerId && partners.length && !state.addingPartner) state.partnerId = String(partners[0].id);
-  const sel = partners.find(x => String(x.id) === String(state.partnerId));
-  const adding = state.addingPartner || !partners.length;
+  try { partners = await request(`/api/profiles/${p.id}/partners?kind=${kind}`); } catch {}
+  state.partnersBy[kind] = partners;
+  let selId = state.partnerSel[kind];
+  if (selId && !partners.some(x => String(x.id) === String(selId))) selId = null;
+  if (!selId && partners.length && !state.addingBy[kind]) selId = String(partners[0].id);
+  state.partnerSel[kind] = selId;
+  const sel = partners.find(x => String(x.id) === String(selId));
+  const adding = state.addingBy[kind] || !partners.length;
   const open = sel && (sel.free || sel.unlocked);
+  const pr = product(kind);
 
-  const chips = partners.length ? `<div class="pt-chips" role="tablist" aria-label="궁합 상대">
-      ${partners.map(x => `<button type="button" class="pt-chip" data-partner-pick="${x.id}" aria-selected="${!adding && sel && sel.id === x.id}">
+  const chips = partners.length ? `<div class="pt-chips" role="tablist" aria-label="${v.who}">
+      ${partners.map(x => `<button type="button" class="pt-chip" data-partner-pick="${x.id}" data-kind="${kind}" aria-selected="${!adding && sel && sel.id === x.id}">
         ${esc(x.name)}<small>${x.free ? '무료' : x.unlocked ? '✓ 열림' : '🔒'}</small></button>`).join('')}
-      <button type="button" class="pt-chip add" data-partner-add aria-selected="${adding}">＋ 상대 추가</button></div>` : '';
+      <button type="button" class="pt-chip add" data-partner-add="${kind}" aria-selected="${adding}">＋ 상대 추가</button></div>` : '';
 
   const form = `<form class="pt-form" id="pt-form" novalidate>
       <p class="notice">${partners.length
-        ? '두 번째 상대부터는 <b>4,900원</b>으로 그 상대와의 궁합(기본 풀이 + 심화 리포트)을 열 수 있어요.'
-        : '궁합을 볼 상대의 출생 정보를 적어주세요. <b>첫 번째 상대는 무료</b>로 궁합을 볼 수 있어요.'}</p>
+        ? `두 번째 상대부터는 <b>${won(pr?.price || 4900)}</b>으로 그 상대와의 ${v.title}(기본 풀이 + 심화 리포트)을 열 수 있어요.`
+        : `${v.who}의 출생 정보를 적어주세요. <b>첫 번째 상대는 무료</b>로 ${v.title}을 볼 수 있어요.`}</p>
       <div class="pt-grid">
         <label>상대 이름 또는 별명<input class="input" id="pt-name" maxlength="20" placeholder="예) 민준" autocomplete="off"></label>
         <label>생년월일 (8자리)<input class="input" id="pt-date" inputmode="numeric" maxlength="10" placeholder="예) 19950712" autocomplete="off"></label>
@@ -1294,41 +1325,46 @@ async function renderCompat() {
         <label class="check"><input type="checkbox" id="pt-time-unknown"> 시간 모름</label>
         <span class="pt-gender" role="group" aria-label="성별"><button type="button" data-ptg="F" aria-pressed="false">여성</button><button type="button" data-ptg="M" aria-pressed="false">남성</button></span>
       </div>
-      <p class="notice">상대의 정보는 궁합에만 쓰이고, 결제와 이어져 있어 나중에 수정할 수 없어요. 상대의 동의를 받고 입력해주세요.</p>
+      <p class="notice">상대의 정보는 이 풀이에만 쓰이고, 결제와 이어져 있어 나중에 수정할 수 없어요. 상대의 동의를 받고 입력해주세요.</p>
       <p class="pay-error" id="pt-error" role="alert"></p>
-      <div class="pt-actions">${partners.length ? '<button type="button" class="btn btn-line" data-partner-cancel>취소</button>' : ''}
-        <button type="submit" class="btn btn-primary">${partners.length ? '상대 추가하기' : '무료 궁합 보기'}</button></div>
+      <div class="pt-actions">${partners.length ? `<button type="button" class="btn btn-line" data-partner-cancel="${kind}">취소</button>` : ''}
+        <button type="submit" class="btn btn-primary">${partners.length ? '상대 추가하기' : v.first}</button></div>
     </form>`;
 
   const locked = sel && !open ? `<div class="pt-locked">
       <span class="big">🔒</span>
-      <h3>${esc(p.name)} 님과 ${esc(sel.name)} 님의 궁합</h3>
-      <p>첫 번째 상대 다음부터는 상대마다 궁합을 열어야 볼 수 있어요. 한 번 열면 기본 풀이와 심화 리포트를 모두 볼 수 있어요.</p>
-      <button class="btn btn-primary" data-buy="COMPAT">${won(product('COMPAT')?.price || 4900)} · 이 상대와의 궁합 열기</button>
+      <h3>${esc(p.name)} 님과 ${esc(sel.name)} 님의 ${v.title}</h3>
+      <p>첫 번째 상대 다음부터는 상대마다 열어야 볼 수 있어요. 한 번 열면 기본 풀이와 심화 리포트를 모두 볼 수 있어요.</p>
+      <button class="btn btn-primary" data-buy="${kind}">${won(pr?.price || 4900)} · 이 상대와의 ${v.title} 열기</button>
     </div>` : '';
 
-  root.innerHTML = simpleFrame(p, { code: 'COMPAT', crumb: '궁합', tag: '💞 궁합',
-    eyebrow: '사랑운 · 두 사람의 기운', title: `${esc(p.name)} 님의 궁합`,
-    lead: '두 사람의 일간(나를 나타내는 글자)과 일지(배우자 자리), 오행 균형을 비교해 관계의 결을 읽어요.',
-    main: `${chips}${adding ? form : locked || '<div id="compat-basic"><p class="notice">궁합을 계산하는 중이에요…</p></div>'}
-      ${sel && !adding ? `<p class="pt-del"><button type="button" class="refund-link" data-partner-del="${sel.id}">이 상대 지우기</button></p>` : ''}` });
-  if (adding) { bindPartnerForm(root, p); root.querySelector('[data-premium]')?.remove(); return; }
+  root.innerHTML = simpleFrame(p, { code: kind, crumb: v.crumb, tag: `${v.icon} ${v.crumb}`,
+    eyebrow: v.eyebrow, title: `${esc(p.name)} 님의 ${v.title}`, lead: v.lead,
+    main: `${chips}${adding ? form : locked || '<div id="pt-basic"><p class="notice">풀이를 계산하는 중이에요…</p></div>'}
+      ${sel && !adding ? `<p class="pt-del"><button type="button" class="refund-link" data-partner-del="${sel.id}" data-kind="${kind}">이 상대 지우기</button></p>` : ''}` });
+  if (adding) { bindPartnerForm(root, p, kind); root.querySelector('[data-premium]')?.remove(); return; }
   if (!open) { root.querySelector('[data-premium]')?.remove(); return; }
   try {
-    const r = await request(`/api/profiles/${p.id}/compat?partnerId=${sel.id}`);
+    const r = await request(`/api/profiles/${p.id}/${v.api}?partnerId=${sel.id}`);
     const score = parseInt(r.subtitle, 10);
-    root.querySelector('#compat-basic').innerHTML = `
-      ${compatHero(p, sel, score)}
+    root.querySelector('#pt-basic').innerHTML = `
+      ${kind === 'COMPAT' ? compatHero(p, sel, score) : reunionHero(p, sel, score)}
       <p class="cp-grade">${esc(r.subtitle.replace(/^\d+점 · /, ''))}</p>
       ${reportHtml(r)}`;
   } catch (err) {
-    root.querySelector('#compat-basic').innerHTML = `<p class="notice">궁합을 불러오지 못했어요. (${esc(err.message)})</p>`;
+    root.querySelector('#pt-basic').innerHTML = `<p class="notice">풀이를 불러오지 못했어요. (${esc(err.message)})</p>`;
   }
-  mountPremium(root, p, 'COMPAT', sel.id);
+  mountPremium(root, p, kind, sel.id);
 }
 
-/** 궁합 상대 입력 칸 */
-function bindPartnerForm(root, p) {
+/** 재회운 상단: 달 + 붉은 실 그림과 두 사람, 재회 지수 */
+function reunionHero(me, ex, score) {
+  return `<div class="topic-hero reunion-hero art-hero">${ART.moon()}
+    <span><span class="lbl">${esc(me.name)} · ${esc(ex.name)}</span><br><span class="val">인연의 끈 ${score}점</span></span></div>`;
+}
+
+/** 상대 입력 칸 */
+function bindPartnerForm(root, p, kind) {
   const f = root.querySelector('#pt-form');
   let gender = null;
   const dateEl = f.querySelector('#pt-date');
@@ -1349,27 +1385,29 @@ function bindPartnerForm(root, p) {
       : !unknown && !time ? '태어난 시간을 고르거나 "시간 모름"을 체크해주세요.' : !gender ? '성별을 골라주세요.' : '';
     if (err.textContent) return;
     try {
-      const added = await request(`/api/profiles/${p.id}/partners`, { method: 'POST', body: JSON.stringify({
+      const added = await request(`/api/profiles/${p.id}/partners?kind=${kind}`, { method: 'POST', body: JSON.stringify({
         name, calendar: cal, birthDate: `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`, leapMonth: cal === 'LUNAR' && f.querySelector('#pt-leap').checked,
         birthTime: unknown ? null : time, gender }) });
-      state.addingPartner = false; state.partnerId = String(added.id);
-      toast(added.free ? '무료 궁합을 볼 수 있어요 💞' : '상대를 추가했어요. 궁합을 열면 볼 수 있어요');
-      renderCompat();
+      state.addingBy[kind] = false; state.partnerSel[kind] = String(added.id);
+      toast(added.free ? '무료로 볼 수 있어요 ✨' : '상대를 추가했어요. 열면 볼 수 있어요');
+      renderPartnerTopic(kind);
     } catch (x) { err.textContent = x.message; }
   };
 }
 
 document.addEventListener('click', async e => {
   const pick = e.target.closest('[data-partner-pick]');
-  if (pick) { state.partnerId = pick.dataset.partnerPick; state.addingPartner = false; return renderCompat(); }
-  if (e.target.closest('[data-partner-add]')) { state.addingPartner = true; return renderCompat(); }
-  if (e.target.closest('[data-partner-cancel]')) { state.addingPartner = false; return renderCompat(); }
+  if (pick) { const k = pick.dataset.kind; state.partnerSel[k] = pick.dataset.partnerPick; state.addingBy[k] = false; return renderPartnerTopic(k); }
+  const add = e.target.closest('[data-partner-add]');
+  if (add) { state.addingBy[add.dataset.partnerAdd] = true; return renderPartnerTopic(add.dataset.partnerAdd); }
+  const cancel = e.target.closest('[data-partner-cancel]');
+  if (cancel) { state.addingBy[cancel.dataset.partnerCancel] = false; return renderPartnerTopic(cancel.dataset.partnerCancel); }
   const del = e.target.closest('[data-partner-del]');
   if (del) {
-    if (del.dataset.confirm !== '1') { del.dataset.confirm = '1'; del.textContent = '지우면 이 상대와의 궁합(구매 포함)을 다시 볼 수 없어요. 정말 지울까요?'; return; }
+    if (del.dataset.confirm !== '1') { del.dataset.confirm = '1'; del.textContent = '지우면 이 상대와의 풀이(구매 포함)를 다시 볼 수 없어요. 정말 지울까요?'; return; }
     try {
       await request(`/api/profiles/${current().id}/partners/${encodeURIComponent(del.dataset.partnerDel)}`, { method: 'DELETE' });
-      state.partnerId = null; toast('상대를 지웠어요'); renderCompat();
+      state.partnerSel[del.dataset.kind] = null; toast('상대를 지웠어요'); renderPartnerTopic(del.dataset.kind);
     } catch (x) { toast(x.message); }
   }
 });
@@ -1387,17 +1425,6 @@ function renderLoveFortune() {
   mountPremium(root, p, 'LOVE');
 }
 
-function renderReunion() {
-  const root = document.getElementById('love-body');
-  const p = current();
-  if (!p) { root.innerHTML = emptyTopic('🌙', '재회운'); return; }
-  root.innerHTML = simpleFrame(p, { code: 'REUNION', crumb: '재회운', tag: '🌙 재회운',
-    eyebrow: '사랑운 · 다시 이어지는 인연', title: `${esc(p.name)} 님의 재회운`,
-    lead: '이별을 대하는 나의 방식(일간)과 올해의 기운으로, 지나간 인연을 어떻게 바라보면 좋을지 읽어요.',
-    main: `<div class="topic-hero reunion-hero art-hero">${ART.moon()}
-        <span><span class="lbl">끊어진 듯 이어진</span><br><span class="val">붉은 실의 인연</span></span></div>` + reportHtml(p.saju.reunion) });
-  mountPremium(root, p, 'REUNION');
-}
 
 /* ════════════════════════════════════════════
    탭 7. 가족운
@@ -2161,7 +2188,7 @@ async function logout() {
   // 로그아웃하면 이 브라우저는 새 손님 ID로 시작 (계정 데이터는 서버에 그대로 남아 있음)
   writeStore('saju.clientId', null);
   state.clientId = getClientId();
-  state.me = { loggedIn: false }; setCurrent(null); state.partnerId = null;
+  state.me = { loggedIn: false }; setCurrent(null); state.partnerSel = {};
   renderAccount(); closeAuth();
   try { await Promise.all([loadProfiles(), loadReflections(), loadShop()]); } catch {}
   showTab('home');

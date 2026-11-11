@@ -116,3 +116,5 @@ CREATE TABLE IF NOT EXISTS feedback (
 -- 첫 번째 상대만 무료(free_partner_id), 두 번째부터는 그 상대와의 궁합을 구매해야 열림
 -- 기존 DB 에 추가할 때 (ddl-auto=update 면 자동):
 -- ALTER TABLE profile ADD COLUMN partner_of BIGINT NULL, ADD COLUMN free_partner_id BIGINT NULL;
+-- 재회운 상대 (v15): partner_kind = COMPAT / REUNION, 재회운 무료 상대 = free_reunion_id
+-- ALTER TABLE profile ADD COLUMN partner_kind VARCHAR(10) NULL, ADD COLUMN free_reunion_id BIGINT NULL;

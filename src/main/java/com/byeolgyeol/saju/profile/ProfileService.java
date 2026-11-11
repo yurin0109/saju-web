@@ -90,7 +90,7 @@ public class ProfileService {
             throw new IllegalArgumentException("리포트 종류가 올바르지 않아요.");
         }
         if (product == Product.BUNDLE) throw new IllegalArgumentException("리포트 종류가 올바르지 않아요.");
-        if (product == Product.COMPAT) purchaseService.requireCompat(clientId, p.getId(), partnerId);
+        if (product.perPartner()) purchaseService.requirePartner(clientId, p.getId(), product, partnerId);
         else purchaseService.requireOwned(clientId, p.getId(), product);
         purchaseService.markOpened(clientId, p.getId(), product, partnerId);   // 열어보면 환불 불가
 
@@ -100,12 +100,15 @@ public class ProfileService {
             case YEAR -> Reports.yearPremium(p.getName(), chart, year);
             case CAREER -> Reports.careerPremium(p.getName(), chart, year);
             case MARRIAGE -> Reports.marriagePremium(p.getName(), p.getGender(), chart, year);
-            case REUNION -> Reports.reunionPremium(p.getName(), chart, year);
+            case REUNION -> {
+                Profile ex = partner(clientId, p, partnerId, "REUNION");
+                yield Reports.reunionPremium(p.getName(), chart, ex.getName(), chart(ex), year);
+            }
             case LOVE -> Reports.lovePremium(p.getName(), p.getGender(), chart, year);
             case FAMILY -> Reports.familyPremium(p.getName(), chart, year);
             case STUDY -> Reports.studyPremium(p.getName(), chart, year);
             case COMPAT -> {
-                Profile partner = partner(clientId, p, partnerId);
+                Profile partner = partner(clientId, p, partnerId, "COMPAT");
                 yield Reports.compatPremium(p.getName(), chart, partner.getName(), chart(partner));
             }
             case BUNDLE -> throw new IllegalStateException();
@@ -118,19 +121,41 @@ public class ProfileService {
      */
     public Report compat(String clientId, Long id, Long partnerId) {
         Profile p = get(clientId, id);
-        Profile partner = partner(clientId, p, partnerId);
-        if (!partner.getId().equals(p.getFreePartnerId()) && !purchaseService.ownsCompat(clientId, p.getId(), partner.getId())) {
-            throw new com.byeolgyeol.saju.common.LockedException("두 번째 상대부터는 궁합을 열어야 볼 수 있어요.");
-        }
+        Profile partner = openedPartner(clientId, p, partnerId, "COMPAT");
         return Reports.compatBasic(p.getName(), chart(p), partner.getName(), chart(partner));
     }
 
-    /** 궁합 상대: 이 사주에 입력한 상대만 (내 다른 사주는 상대로 못 씀) */
-    private Profile partner(String clientId, Profile me, Long partnerId) {
-        if (partnerId == null) throw new IllegalArgumentException("궁합을 볼 상대를 선택해주세요.");
-        Profile partner = get(clientId, partnerId);
-        if (!me.getId().equals(partner.getPartnerOf())) throw new NoSuchElementException("궁합 상대를 찾을 수 없어요.");
+    /** 재회운 기본 풀이 (두 사람 기준). 첫 번째 상대 무료, 두 번째부터는 구매해야 열림 */
+    public Report reunion(String clientId, Long id, Long partnerId) {
+        Profile p = get(clientId, id);
+        Profile ex = openedPartner(clientId, p, partnerId, "REUNION");
+        return Reports.reunionBasic(p.getName(), chart(p), ex.getName(), chart(ex), calculator.sajuYear(LocalDate.now(KOREA)));
+    }
+
+    /** 무료 상대이거나 구매한 상대만 통과 */
+    private Profile openedPartner(String clientId, Profile me, Long partnerId, String kind) {
+        Profile partner = partner(clientId, me, partnerId, kind);
+        if (!partner.getId().equals(me.freePartnerFor(kind))
+                && !purchaseService.ownsPartner(clientId, me.getId(), Product.valueOf(kind), partner.getId())) {
+            throw new com.byeolgyeol.saju.common.LockedException("두 번째 상대부터는 열어야 볼 수 있어요.");
+        }
         return partner;
+    }
+
+    /** 상대: 이 사주에 그 종류(궁합 / 재회운)로 입력한 상대만 (내 다른 사주는 상대로 못 씀) */
+    private Profile partner(String clientId, Profile me, Long partnerId, String kind) {
+        if (partnerId == null) throw new IllegalArgumentException("상대를 먼저 입력해주세요.");
+        Profile partner = get(clientId, partnerId);
+        if (!me.getId().equals(partner.getPartnerOf()) || !kind.equals(partner.getPartnerKind())) {
+            throw new NoSuchElementException("상대 정보를 찾을 수 없어요.");
+        }
+        return partner;
+    }
+
+    static String kind(String k) {
+        if (k == null || k.isBlank() || k.equals("COMPAT")) return "COMPAT";
+        if (k.equals("REUNION")) return "REUNION";
+        throw new IllegalArgumentException("상대 종류가 올바르지 않아요.");
     }
 
     /** 궁합 상대 한 명 (화면용): free = 무료로 보는 첫 상대, unlocked = 궁합을 구매한 상대 */
@@ -143,17 +168,20 @@ public class ProfileService {
                 x.getCalendarType(), free, unlocked, dm.korean(), dm.element().name());
     }
 
-    public List<PartnerDto> partners(String clientId, Long id) {
+    public List<PartnerDto> partners(String clientId, Long id, String kindParam) {
+        String kind = kind(kindParam);
         Profile p = get(clientId, id);
-        List<Long> bought = purchaseService.compatPartners(clientId, p.getId());
+        List<Long> bought = purchaseService.partnersFor(clientId, p.getId(), Product.valueOf(kind));
         return repository.findByClientIdAndPartnerOfOrderByCreatedAtAsc(clientId, p.getId()).stream()
-                .map(x -> partnerDto(x, x.getId().equals(p.getFreePartnerId()), bought.contains(x.getId())))
+                .filter(x -> kind.equals(x.getPartnerKind()))
+                .map(x -> partnerDto(x, x.getId().equals(p.freePartnerFor(kind)), bought.contains(x.getId())))
                 .toList();
     }
 
     /** 궁합 상대 입력. 처음 입력한 상대가 무료 상대가 된다 */
     @Transactional
-    public PartnerDto addPartner(String clientId, Long id, ProfileRequest req) {
+    public PartnerDto addPartner(String clientId, Long id, String kindParam, ProfileRequest req) {
+        String kind = kind(kindParam);
         Profile me = get(clientId, id);
         if (me.isPartner()) throw new IllegalArgumentException("궁합 상대의 궁합은 볼 수 없어요.");
         if (repository.countByClientIdAndPartnerOf(clientId, me.getId()) >= MAX_PARTNERS) {
@@ -162,10 +190,11 @@ public class ProfileService {
         Profile partner = new Profile(clientId, req.name().trim(), solarDate(req), req.birthTime(), req.gender(), null);
         partner.setCalendar(req.lunar() ? "LUNAR" : "SOLAR", req.lunar() ? req.birthDate() : null, req.lunar() ? req.leap() : null);
         partner.setPartnerOf(me.getId());
+        partner.setPartnerKind(kind);
         repository.save(partner);
         boolean free = false;
-        if (me.getFreePartnerId() == null) {
-            me.setFreePartnerId(partner.getId());
+        if (me.freePartnerFor(kind) == null) {
+            me.setFreePartnerFor(kind, partner.getId());
             repository.save(me);
             free = true;
         }
@@ -176,7 +205,8 @@ public class ProfileService {
     @Transactional
     public void deletePartner(String clientId, Long id, Long partnerId) {
         Profile me = get(clientId, id);
-        Profile partner = partner(clientId, me, partnerId);
+        Profile partner = get(clientId, partnerId);
+        if (!me.getId().equals(partner.getPartnerOf())) throw new NoSuchElementException("상대 정보를 찾을 수 없어요.");
         repository.delete(partner);
     }
 
@@ -238,7 +268,8 @@ public class ProfileService {
         Set<Product> owned = purchaseService.owned(p.getClientId(), p.getId());
 
         return ProfileResponse.of(p, chart, thisYear, yearPillar, owned,
-                purchaseService.compatPartners(p.getClientId(), p.getId()));
+                purchaseService.compatPartners(p.getClientId(), p.getId()),
+                purchaseService.partnersFor(p.getClientId(), p.getId(), Product.REUNION));
     }
 
     private static String blankToNull(String s) {

@@ -67,6 +67,19 @@ class ReportsTest {
     }
 
     @Test
+    @DisplayName("두 사람 재회운: 점수는 35~95점, 심화는 기본보다 3배 이상 길다")
+    void reunionPair() {
+        SajuChart other = calc.calculate(LocalDate.of(1993, 3, 5), null);
+        for (LocalDate d = LocalDate.of(1985, 1, 1); d.getYear() < 1995; d = d.plusDays(47)) {
+            SajuChart c = calc.calculate(d, null);
+            Report basic = Reports.reunionBasic("가", c, "나", other, 2026);
+            int score = Integer.parseInt(basic.subtitle().split("점")[0]);
+            assertTrue(score >= 35 && score <= 95, "점수 " + score);
+            assertTrue(Reports.reunionPremium("가", c, "나", other, 2026).length() >= basic.length() * 3);
+        }
+    }
+
+    @Test
     @DisplayName("고민 문장에서 세부 주제를 찾아 맞춤 답(공감 · 해볼 일 3가지 · 질문)을 만든다")
     void concernTopic() {
         SajuChart c = calc.calculate(LocalDate.of(1994, 8, 17), null);
@@ -108,7 +121,8 @@ class ReportsTest {
                     Reports.familyBasic("가", c), Reports.familyPremium("가", c, 2026),
                     Reports.compatBasic("가", c, "나", other), Reports.compatPremium("가", c, "나", other),
                     Reports.studyBasic("가", c, 2026), Reports.studyPremium("가", c, 2026),
-                    Reports.loveBasic("가", "F", c, 2026), Reports.lovePremium("가", "M", c, 2026)}) {
+                    Reports.loveBasic("가", "F", c, 2026), Reports.lovePremium("가", "M", c, 2026),
+                    Reports.reunionBasic("가", c, "나", other, 2026), Reports.reunionPremium("가", c, "나", other, 2026)}) {
                 for (Report.Section s : r.sections()) {
                     assertFalse(s.paragraphs().isEmpty() && s.items().isEmpty(), r.code() + " " + s.title());
                     for (String p : s.paragraphs()) assertNotNull(p, r.code() + " " + s.title());

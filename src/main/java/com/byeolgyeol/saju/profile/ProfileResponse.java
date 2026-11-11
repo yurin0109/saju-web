@@ -77,6 +77,8 @@ public record ProfileResponse(
                        List<String> owned,
                        /** 궁합 심화를 산 상대 프로필 id (궁합은 상대마다 따로 구매) */
                        List<Long> compatPartners,
+                       /** 재회운 심화를 산 상대 프로필 id */
+                       List<Long> reunionPartners,
                        YearDto thisYear, CareerDto career, MarriageDto marriage,
                        Report reunion, Report family, Report study, Reports.ConcernDto concern,
                        /** 연애운 (애정운) 무료 기본 풀이 */
@@ -85,7 +87,7 @@ public record ProfileResponse(
                        List<ShinSal.Found> shinsal, List<ShinSal.Info> shinsalGuide) {}
 
     public static ProfileResponse of(Profile p, SajuChart chart, int currentSajuYear, Pillar yearPillar,
-                                     Set<Product> owned, List<Long> compatPartners) {
+                                     Set<Product> owned, List<Long> compatPartners, List<Long> reunionPartners) {
         // 기둥 (시 · 일 · 월 · 년 순서가 전통 표기)
         List<PillarDto> pillars = List.of(
                 PillarDto.of("시주", chart.hour()),
@@ -158,7 +160,7 @@ public record ProfileResponse(
                 new Saju(pillars, elements, core, balance,
                         new YearInfo(currentSajuYear, yearPillar.korean(), yearPillar.hanja(), yearElement.name()),
                         owned.stream().map(Enum::name).sorted().toList(),
-                        compatPartners,
+                        compatPartners, reunionPartners,
                         thisYear, career, marriage,
                         Reports.reunionBasic(p.getName(), chart, currentSajuYear),
                         Reports.familyBasic(p.getName(), chart),

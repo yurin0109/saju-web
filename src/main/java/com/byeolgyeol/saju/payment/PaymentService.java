@@ -40,7 +40,7 @@ public class PaymentService {
         Product product = purchases.check(clientId, req.profileId(), req.productCode(), req.partnerId());
         String orderId = "ats-" + UUID.randomUUID().toString().replace("-", "").substring(0, 24);
         orders.save(new PaymentOrder(orderId, clientId, req.profileId(), product.name(), product.price(),
-                product == Product.COMPAT ? req.partnerId() : null));
+                product.perPartner() ? req.partnerId() : null));
         return new PaymentDto.OrderResponse(orderId, product.price(), product.title(), config.clientKey(), customerKey(clientId));
     }
 

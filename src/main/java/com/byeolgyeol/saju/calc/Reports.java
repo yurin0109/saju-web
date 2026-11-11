@@ -493,6 +493,72 @@ public final class Reports {
         return b.build();
     }
 
+    // ════════════════════ 재회운 (두 사람 기준) ════════════════════
+
+    /** 재회 가능성(관계의 끈) 지수: 일간 관계 + 일지 합충 + 올해 기운이 상대 일지와 합하는지 */
+    static int reunionScore(SajuChart me, SajuChart ex, int sajuYear) {
+        Relation r = Relation.between(me.dayMaster().element(), ex.dayMaster().element());
+        int score = 55 + switch (r) { case RESOURCE, OUTPUT -> 10; case PEER -> 6; case WEALTH, OFFICER -> 3; };
+        if (stemHap(me.dayMaster(), ex.dayMaster())) score += 8;
+        String bs = branchState(me.day().branch(), ex.day().branch());
+        score += bs.equals("HAP") ? 12 : bs.equals("CHUNG") ? -6 : 0;
+        Branch yb = CALC.yearPillarOf(sajuYear).branch();
+        if (hap(yb, ex.day().branch()) || hap(yb, me.day().branch())) score += 7;
+        return Math.max(35, Math.min(95, score));
+    }
+
+    /** 재회운 기본 풀이 (첫 상대 무료) */
+    public static Report reunionBasic(String myName, SajuChart me, String exName, SajuChart ex, int sajuYear) {
+        Relation r = Relation.between(me.dayMaster().element(), ex.dayMaster().element());
+        int score = reunionScore(me, ex, sajuYear);
+        String bs = branchState(me.day().branch(), ex.day().branch());
+        return new Report.Builder("REUNION", myName + " · " + exName, score + "점 · " + ReunionText.grade(score))
+                .text("두 사람의 인연의 결", myName + " 님(" + me.dayMaster().korean() + me.dayMaster().element().korean() + ") → "
+                        + exName + " 님(" + ex.dayMaster().korean() + ex.dayMaster().element().korean() + ") · " + r.koreanName(),
+                        List.of(ReunionText.PAIR.get(r).get(0), ReunionText.PAIR.get(r).get(1)))
+                .text("배우자 자리로 본 인연", me.day().branch().korean() + "(" + me.day().branch().hanja() + ") · "
+                        + ex.day().branch().korean() + "(" + ex.day().branch().hanja() + ")", List.of(ReunionText.BRANCH.get(bs)))
+                .text("이별을 대하는 나의 방식", elementName(me.dayMaster().element()) + "의 기운",
+                        List.of(LovePremiumText.REUNION_STYLE.get(me.dayMaster().element())))
+                .build();
+    }
+
+    /** 재회운 심화 (상대마다 구매) */
+    public static Report reunionPremium(String myName, SajuChart me, String exName, SajuChart ex, int sajuYear) {
+        Relation r = Relation.between(me.dayMaster().element(), ex.dayMaster().element());
+        Relation palace = TenGods.spousePalace(me);
+        Branch myBranch = me.day().branch(), exBranch = ex.day().branch();
+        Report.Builder b = new Report.Builder("REUNION", "재회운 심화 리포트",
+                myName + " 님과 " + exName + " 님이 다시 이어지기 위한 조건과 앞으로 3년의 흐름을 읽어요.");
+        b.text("다시 이어지기 위한 조건", r.koreanName() + " · " + r.description(),
+                List.of(ReunionText.PAIR.get(r).get(2), LovePremiumText.REUNION_DEEP.get(palace).get(0)));
+        b.text("관계에서 반복되기 쉬운 패턴", null, List.of(LovePremiumText.PALACE.get(palace).get(1),
+                "같은 이유로 다시 멀어지지 않으려면, 이 패턴을 '상대의 문제'가 아니라 '두 사람 사이에서 생기는 흐름'으로 보는 것이 중요해요."));
+        b.text("서로에게 채워주던 기운", null, List.of(
+                myName + " 님에게 부족한 기운은 " + elementName(me.weakest()) + ", " + exName + " 님에게 가장 강한 기운은 " + elementName(ex.strongest()) + "이에요. "
+                        + (ex.strongest() == me.weakest() ? "상대가 내 부족한 부분을 채워주던 사람이라, 헤어진 뒤 빈자리가 더 크게 느껴질 수 있어요."
+                                : "상대가 꼭 내 부족함을 채워주는 관계는 아니었어요. 그 빈자리는 상대가 아니라 나 스스로 채울 수 있다는 뜻이기도 해요.")));
+
+        List<Report.Item> years = new ArrayList<>();
+        for (int y = sajuYear; y < sajuYear + 3; y++) {
+            Pillar p = CALC.yearPillarOf(y);
+            Relation yr = yearRelation(me, y);
+            String tag = p.korean() + "년 · " + yr.koreanName();
+            String text = LovePremiumText.REUNION_YEAR.get(yr);
+            int score = 3;
+            if (hap(p.branch(), exBranch) || hap(p.branch(), myBranch)) { tag += " · 인연의 합"; text += " 두 사람 중 한 사람의 배우자 자리와 합을 이루어, 끊어졌던 연락이 다시 닿기 쉬운 해예요."; score = 5; }
+            if (chung(p.branch(), exBranch) || chung(p.branch(), myBranch)) { tag += " · 충"; text += " 관계를 정리하거나 완전히 새로 시작하는 기운이 강한 해라, 급하게 결정하지 않는 것이 좋아요."; score = 2; }
+            years.add(new Report.Item(y + "년", tag, text, score));
+        }
+        b.items("앞으로 3년 재회의 흐름", null, List.of(), years);
+        b.items("다시 연락하기 전 체크", "다시 만나든 떠나보내든, 나를 지키는 기준이에요.", List.of(),
+                ReunionText.BEFORE_CONTACT.stream().map(t -> new Report.Item("☐", null, t)).toList());
+        b.items("마음 정리 가이드", "다시 만나든, 떠나보내든 나를 지키는 다섯 단계", List.of(),
+                java.util.stream.IntStream.range(0, LovePremiumText.REUNION_GUIDE.size())
+                        .mapToObj(i -> new Report.Item(String.valueOf(i + 1), null, LovePremiumText.REUNION_GUIDE.get(i))).toList());
+        return b.build();
+    }
+
     // ════════════════════ 가족운 ════════════════════
 
     public static Report familyBasic(String name, SajuChart chart) {

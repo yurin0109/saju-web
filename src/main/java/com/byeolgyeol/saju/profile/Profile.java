@@ -70,6 +70,14 @@ public class Profile {
     @Column(name = "free_partner_id")
     private Long freePartnerId;
 
+    /** 상대 종류: COMPAT(궁합 상대) / REUNION(재회운 상대). 예전 데이터(null)는 궁합 상대 */
+    @Column(name = "partner_kind", length = 10)
+    private String partnerKind;
+
+    /** 무료로 재회운을 볼 수 있는 첫 번째 상대 */
+    @Column(name = "free_reunion_id")
+    private Long freeReunionId;
+
     protected Profile() {}
 
     public Profile(String clientId, String name, LocalDate birthDate, LocalTime birthTime,
@@ -109,6 +117,11 @@ public class Profile {
     public boolean isPartner() { return partnerOf != null; }
     public Long getFreePartnerId() { return freePartnerId; }
     public void setFreePartnerId(Long id) { this.freePartnerId = id; }
+    public String getPartnerKind() { return partnerOf == null ? null : partnerKind == null ? "COMPAT" : partnerKind; }
+    public void setPartnerKind(String kind) { this.partnerKind = kind; }
+    /** 종류별 무료 상대 */
+    public Long freePartnerFor(String kind) { return "REUNION".equals(kind) ? freeReunionId : freePartnerId; }
+    public void setFreePartnerFor(String kind, Long id) { if ("REUNION".equals(kind)) freeReunionId = id; else freePartnerId = id; }
 
     public boolean isLunar() { return "LUNAR".equals(calendarType) && lunarDate != null; }
     public String getCalendarType() { return calendarType == null ? "SOLAR" : calendarType; }
