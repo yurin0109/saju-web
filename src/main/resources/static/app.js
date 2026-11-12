@@ -46,7 +46,8 @@ const state = {
   payFor: null,          // { profileId, code }
   loveView: (['love', 'marriage', 'compat', 'reunion'].includes(readStore('saju.loveView')) ? readStore('saju.loveView') : 'love'),
   partnerId: null,
-  workView: (readStore('saju.workView') === 'study' ? 'study' : 'career'),
+  concerns: [],
+  workView: (['study', 'wealth'].includes(readStore('saju.workView')) ? readStore('saju.workView') : 'career'),
   editingReflection: null,
   confirmReflection: null,
 };
@@ -98,7 +99,7 @@ const product = code => state.products.find(x => x.code === code);
 const owns = (p, code) => !!p && p.saju.owned.includes(code);
 /** 궁합은 상대 1명마다 따로 산다: 그 상대로 산 기록이 있을 때만 열림 (묶음에도 궁합은 없음) */
 const ownsCompat = (p, partnerId) => !!p && (p.saju.compatPartners || []).map(String).includes(String(partnerId));
-/** 묶음으로 열리는 6종 (궁합 · 재회운 제외) */
+/** 묶음으로 열리는 7종 (궁합 · 재회운 제외) */
 const BUNDLE_CODES = () => REPORT_CODES.filter(c => !PER_PARTNER.includes(c));
 /** 상대 1명마다 따로 사는 리포트 (궁합 · 재회운) */
 const PER_PARTNER = ['COMPAT', 'REUNION'];
@@ -350,31 +351,37 @@ function shinsalCard(p) {
   </section>`;
 }
 
-/** 내 결과: 입력한 고민에 맞춘 풀이 + 맞는 심화 리포트 추천 */
+/** 고른 고민 풀이 목록 (여러 개 고른 경우 분류마다 하나씩, 예전 데이터는 하나) */
+const concernsOf = p => p.saju.concerns?.length ? p.saju.concerns : p.saju.concern ? [p.saju.concern] : [];
+
+/** 내 결과: 입력한 고민에 맞춘 풀이 + 맞는 심화 리포트 추천 (고민 분류를 여러 개 고르면 분류마다 카드 하나) */
 function concernCard(p) {
-  const c = p.saju.concern;
-  if (!c) return `
+  const list = concernsOf(p);
+  if (!list.length) return `
     <div class="card concern-card" id="concern">
       <span class="eyebrow">고민 맞춤 풀이</span>
       <h3>요즘 고민이 있다면 알려주세요</h3>
-      <p class="body">사주 정보를 수정해서 요즘 가장 큰 고민을 적으면, ${esc(p.name)} 님의 사주로 그 고민을 함께 들여다보고 가장 잘 맞는 리포트를 추천해드려요.</p>
+      <p class="body">사주 정보를 수정해서 요즘 고민(최대 3개)을 고르고 적으면, ${esc(p.name)} 님의 사주로 그 고민을 함께 들여다보고 가장 잘 맞는 리포트를 추천해드려요.</p>
       <button class="btn btn-ghost" style="align-self:flex-start" data-edit="${p.id}">고민 적으러 가기 ↗</button>
     </div>`;
-  const info = REPORT_INFO[c.product], pr = product(c.product), open = owns(p, c.product);
-  const [empathy, insight, approach, timing] = c.paragraphs;
-  return `
-    <div class="card concern-card" id="concern">
-      <div class="crumb-row"><span class="eyebrow">고민 맞춤 풀이</span><span class="tag">${esc(c.label)}${c.topic && c.topic !== c.label ? ' · ' + esc(c.topic) : ''}</span></div>
-      <h3>${esc(p.name)} 님의 고민, 별에게 물어봤어요</h3>
-      ${c.text ? `<blockquote class="concern-quote">${esc(c.text)}</blockquote>` : ''}
-      <p class="body">${esc(c.text ? empathy.replace(/^“[\s\S]*?” — /, '') : empathy)}</p>
+  const many = list.length > 1;
+  return `<div class="concern-stack" id="concern">${list.map((c, i) => {
+    const info = REPORT_INFO[c.product], pr = product(c.product), open = owns(p, c.product);
+    const [empathy, insight, approach, timing] = c.paragraphs;
+    const quoted = i === 0 && c.text;
+    return `
+    <div class="card concern-card">
+      <div class="crumb-row"><span class="eyebrow">고민 맞춤 풀이${many ? ` ${i + 1} / ${list.length}` : ''}</span><span class="tag">${esc(c.label)}${c.topic && c.topic !== c.label ? ' · ' + esc(c.topic) : ''}</span></div>
+      <h3>${i === 0 ? `${esc(p.name)} 님의 고민, 별에게 물어봤어요` : `${esc(c.label)} 고민도 함께 봤어요`}</h3>
+      ${quoted ? `<blockquote class="concern-quote">${esc(c.text)}</blockquote>` : ''}
+      <p class="body">${esc(empathy.replace(/^“[\s\S]*?” — /, ''))}</p>
       <div class="concern-part"><h4>🔮 사주로 보면</h4><p class="body">${esc(insight)}</p><p class="body">${esc(approach)}</p></div>
       <div class="concern-part"><h4>🗓️ 올해의 흐름</h4><p class="body">${esc(timing)}</p></div>
       ${c.steps?.length ? `<div class="concern-part"><h4>✅ 지금 해볼 수 있는 일</h4>
         <ol class="concern-steps">${c.steps.map(t => `<li>${esc(t)}</li>`).join('')}</ol></div>` : ''}
       ${c.question ? `<div class="concern-ask"><span>스스로에게 물어보기</span><p>${esc(c.question)}</p>
         <small>답이 떠오르면 위의 성찰 질문 칸이나 성찰 일기에 적어두세요.</small></div>` : ''}
-      <button type="button" class="concern-miss" data-concern-miss>🙁 풀이가 내 고민과 잘 안 맞아요 · 알려주기</button>
+      <button type="button" class="concern-miss" data-concern-miss="${i}">🙁 이 풀이가 내 고민과 잘 안 맞아요 · 알려주기</button>
       <div class="concern-cta">
         <p>${info.icon} ${esc(c.pitch)}</p>
         ${open ? `<button class="btn btn-ghost" data-goreport="${c.product}">심화 리포트 보기 ↗</button>`
@@ -382,11 +389,14 @@ function concernCard(p) {
                : `<button class="btn btn-primary" data-buy="${c.product}">${pr ? won(pr.price) : ''} · ${info.name()} 심화 리포트 열기</button>`}
       </div>
     </div>`;
+  }).join('')}</div>`;
 }
 /** 결과 화면 위쪽 안내: 적은 고민의 풀이가 아래에 있다고 알려주고 바로 이동 */
 function concernNotice(p) {
-  if (!p.saju.concern) return '';
-  return `<button type="button" class="concern-notice" data-scroll="concern">📝 적어주신 고민(${esc(p.saju.concern.topic || p.saju.concern.label)})에 대한 풀이가 이 페이지 아래에 있어요 <b>바로 보기 ↓</b></button>`;
+  const list = concernsOf(p);
+  if (!list.length) return '';
+  const names = list.map(c => c.topic || c.label).join(', ');
+  return `<button type="button" class="concern-notice" data-scroll="concern">📝 적어주신 고민(${esc(names)})에 대한 풀이${list.length > 1 ? ` ${list.length}개` : ''}가 이 페이지 아래에 있어요 <b>바로 보기 ↓</b></button>`;
 }
 document.addEventListener('click', e => {
   const s = e.target.closest('[data-scroll]');
@@ -485,15 +495,28 @@ function emptyTopic(icon, what) {
    탭 5. 직장운
    ════════════════════════════════════════════ */
 /* ════════════════════════════════════════════
-   탭 5. 직장 · 학업 (직장운 · 학업운)
+   탭 5. 직장 · 재물 · 학업 (직장운 · 재물운 · 학업운)
    ════════════════════════════════════════════ */
 function renderWork() {
   const wrap = document.getElementById('career-root');
-  const views = [['career', '🧭 직장운'], ['study', '📚 학업운']];
+  const views = [['career', '🧭 직장운'], ['wealth', '💰 재물운'], ['study', '📚 학업운']];
   wrap.innerHTML = `<div class="sub-tabs love-tabs" role="tablist">${views.map(([k, l]) =>
     `<button type="button" data-work="${k}" aria-selected="${state.workView === k}">${l}</button>`).join('')}</div>
     <div id="work-body" style="margin-top:28px"></div>`;
-  (state.workView === 'study' ? renderStudy : renderCareer)();
+  ({ career: renderCareer, wealth: renderWealth, study: renderStudy }[state.workView] || renderCareer)();
+}
+
+/** 재물운: 돈을 대하는 스타일 + 올해 재물의 흐름 (무료) + 심화 리포트 */
+function renderWealth() {
+  const root = document.getElementById('work-body');
+  const p = current();
+  if (!p) { root.innerHTML = emptyTopic('💰', '재물운'); return; }
+  root.innerHTML = simpleFrame(p, { code: 'WEALTH', crumb: '재물운', tag: '💰 재물운',
+    eyebrow: '직장 · 재물 · 돈의 흐름', title: `${esc(p.name)} 님의 재물운`,
+    lead: '일간의 오행으로 돈을 대하는 스타일을, 재물의 별(재성)과 올해 들어오는 기운으로 재물의 흐름을 읽어요. 투자 · 대출 같은 큰 결정은 운세보다 내 상황과 전문가 상담을 기준으로 해주세요.',
+    main: `<div class="topic-hero wealth-hero art-hero">${ART.coins()}
+        <span><span class="lbl">올해 재물의 흐름</span><br><span class="val">${esc(p.saju.wealth.sections[1]?.lead || '')}</span></span></div>` + reportHtml(p.saju.wealth) });
+  mountPremium(root, p, 'WEALTH');
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-work]');
@@ -838,6 +861,8 @@ const REPORT_INFO = {
           preview: ['올해 총론 심화', '이번 달부터 12개월 월별 흐름', '분기별 실천 플랜', '영역별 풀이 (일 · 재물 · 관계 · 컨디션)', '나의 오행으로 본 올해', '올해의 행운 포인트'] },
   CAREER: { icon: '🧭', name: () => '직장운', go: ['career', 'career'],
           preview: ['일하는 스타일 심화', '십성 분포로 본 일의 힘', '강점 · 약점 · 보완할 기운', '직장 안에서의 관계', '앞으로 3년 일의 흐름', '잘 맞는 일 TOP 4'] },
+  WEALTH: { icon: '💰', name: () => '재물운', go: ['career', 'wealth'],
+          preview: ['한눈에 보는 재물운', '재물의 별 · 나에게 맞는 돈 버는 방식', '재물이 들어오기 좋은 달 TOP 3', '지출을 조심할 달', '앞으로 3년 재물의 흐름', '돈이 새기 쉬운 습관 · 재물운 체크리스트'] },
   LOVE: { icon: '💗', name: () => '연애운', go: ['marriage', 'love'],
           preview: ['한눈에 보는 연애운', '나의 연애 스타일 심화', '이성 인연의 별 · 나의 매력 포인트', '인연이 들어오기 좋은 달 TOP 3', '앞으로 3년 연애의 흐름', '잘 맞는 상대 · 조심할 점 · 연애운 체크리스트'] },
   MARRIAGE: { icon: '💍', name: () => '결혼운', go: ['marriage', 'marriage'],
@@ -851,7 +876,7 @@ const REPORT_INFO = {
   FAMILY: { icon: '🏡', name: () => '가족운', go: ['family'],
           preview: ['어린 시절 (년주)', '부모 · 형제 자리 심화', '형제 · 동료의 기운', '자녀 자리 (시주)', '가족과 건강한 거리 두기', '앞으로 3년 가족의 흐름'] },
 };
-const REPORT_CODES = ['YEAR', 'CAREER', 'STUDY', 'LOVE', 'MARRIAGE', 'COMPAT', 'REUNION', 'FAMILY'];
+const REPORT_CODES = ['YEAR', 'CAREER', 'WEALTH', 'STUDY', 'LOVE', 'MARRIAGE', 'COMPAT', 'REUNION', 'FAMILY'];
 
 /** 리포트가 있는 화면으로 이동 */
 function goReport(code) {
@@ -871,7 +896,7 @@ function buyButtons(p, code) {
   const bundleUseful = !PER_PARTNER.includes(code) && BUNDLE_CODES().some(c => !owns(p, c));   // 궁합 · 재회운은 묶음에 없으니 묶음 버튼을 안 보여줌
   return `
     <button class="btn btn-primary" data-buy="${code}">${one ? won(one.price) : ''} · 심화 리포트 열기</button>
-    ${bundleUseful && bundle ? `<button class="btn btn-ghost" data-buy="BUNDLE">6종 묶음 ${won(bundle.price)}</button>` : ''}`;
+    ${bundleUseful && bundle ? `<button class="btn btn-ghost" data-buy="BUNDLE">7종 묶음 ${won(bundle.price)}</button>` : ''}`;
 }
 
 /** 각 탭 아래에 붙는 심화 리포트 자리 */
@@ -923,7 +948,7 @@ async function mountPremium(root, p, code, partner) {
   }
 }
 
-/** 내 결과 하단: 심화 리포트 8종 카드 (묶음은 궁합 · 재회운 뺀 6종) */
+/** 내 결과 하단: 심화 리포트 9종 카드 (묶음은 궁합 · 재회운 뺀 7종) */
 function paidSection(p) {
   const bundle = product('BUNDLE');
   const singleSum = BUNDLE_CODES().reduce((n, c) => n + (product(c)?.price || 0), 0);
@@ -953,9 +978,9 @@ function paidSection(p) {
     </div>
     <div class="paid-grid">${cards}</div>
     ${!all && bundle ? `<div class="bundle-bar">
-      <div><h3>심화 리포트 6종 한 번에 <small>(궁합 · 재회운은 상대마다 따로)</small></h3>
+      <div><h3>심화 리포트 7종 한 번에 <small>(궁합 · 재회운은 상대마다 따로)</small></h3>
         <span class="save">따로 사면 ${won(singleSum)} → 묶음 ${won(bundle.price)} (${won(singleSum - bundle.price)} 할인)</span></div>
-      <button class="btn btn-primary" data-buy="BUNDLE">6종 묶음 구매 ↗</button>
+      <button class="btn btn-primary" data-buy="BUNDLE">7종 묶음 구매 ↗</button>
     </div>` : ''}`;
 }
 
@@ -1216,6 +1241,18 @@ const ART = {
     <path d="M110 18 l4 10 l10 1 l-8 6 l3 10 l-9 -6 l-9 6 l3 -10 l-8 -6 l10 -1 z" fill="#ffd27a">
       <animateTransform attributeName="transform" type="translate" values="0 0;0 -4;0 0" dur="2.4s" repeatCount="indefinite"/></path>
     ${[[30, 30, 2.4], [192, 26, 2], [200, 96, 1.8], [24, 90, 2]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" opacity=".7"><animate attributeName="opacity" values=".2;1;.2" dur="${2 + r}s" repeatCount="indefinite"/></circle>`).join('')}
+  </svg>`,
+  coins: () => `<svg class="art" viewBox="0 0 220 140" aria-hidden="true">
+    <defs><linearGradient id="cn1" x1="0" x2="1"><stop offset="0" stop-color="#ffe3a3"/><stop offset="1" stop-color="#f4b860"/></linearGradient>
+      <linearGradient id="cn2" x1="0" x2="1"><stop offset="0" stop-color="#f4c97a"/><stop offset="1" stop-color="#d9973f"/></linearGradient>
+      <filter id="cng"><feGaussianBlur stdDeviation="5"/></filter></defs>
+    <ellipse cx="110" cy="116" rx="72" ry="8" fill="#f4c97a" opacity=".2" filter="url(#cng)"/>
+    ${[[70, 104], [70, 94], [70, 84], [150, 104], [150, 94]].map(([x, y]) => `<ellipse cx="${x}" cy="${y + 4}" rx="26" ry="8" fill="url(#cn2)"/><ellipse cx="${x}" cy="${y}" rx="26" ry="8" fill="url(#cn1)"/>`).join('')}
+    <g><animateTransform attributeName="transform" type="translate" values="0 0;0 -5;0 0" dur="2.8s" repeatCount="indefinite"/>
+      <circle cx="110" cy="58" r="26" fill="url(#cn2)"/><circle cx="110" cy="56" r="26" fill="url(#cn1)"/>
+      <circle cx="110" cy="56" r="19" fill="none" stroke="#d9973f" stroke-width="2" opacity=".6"/>
+      <rect x="104" y="50" width="12" height="12" fill="none" stroke="#c9822e" stroke-width="2.4" transform="rotate(45 110 56)"/></g>
+    ${[[34, 40, 2.2], [190, 30, 2], [196, 88, 1.8], [28, 92, 1.6]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" opacity=".7"><animate attributeName="opacity" values=".2;1;.2" dur="${2 + r}s" repeatCount="indefinite"/></circle>`).join('')}
   </svg>`,
   letter: () => `<svg class="art" viewBox="0 0 220 140" aria-hidden="true">
     <defs><linearGradient id="lt1" x1="0" x2="1"><stop offset="0" stop-color="#ffd1ec"/><stop offset="1" stop-color="#f6b3d8"/></linearGradient>
@@ -1908,9 +1945,16 @@ function setCalendar(v) {
 }
 $('f-cal').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setCalendar(b.dataset.value); });
 
+/** 고민 분류: 최대 3개까지 여러 개 고르기 (다시 누르면 빠짐). v = null 이면 모두 지우기 */
+const MAX_CONCERNS = 3;
 function setConcern(v) {
-  state.concern = state.concern === v ? null : v;
-  $('f-concern').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.value === state.concern));
+  const list = state.concerns || [];
+  if (v == null) state.concerns = [];
+  else if (list.includes(v)) state.concerns = list.filter(x => x !== v);
+  else if (list.length >= MAX_CONCERNS) { toast(`고민은 ${MAX_CONCERNS}개까지 고를 수 있어요`); return; }
+  else state.concerns = [...list, v];
+  $('f-concern').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(state.concerns.includes(b.dataset.value))));
+  $('f-concern-picked').textContent = state.concerns.length ? `${state.concerns.length} / ${MAX_CONCERNS}개 골랐어요` : `여러 개 골라도 돼요 (최대 ${MAX_CONCERNS}개)`;
 }
 $('f-concern').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setConcern(b.dataset.value); });
 $('f-concern-text').addEventListener('input', e => { $('f-concern-count').textContent = e.target.value.length; });
@@ -1973,7 +2017,7 @@ function resetForm() {
   setGender(null);
   setCalendar('SOLAR');
   setAmpm('AM');
-  state.concern = null; setConcern(null);
+  setConcern(null);
   $('f-concern-count').textContent = 0;
   $('form-error').textContent = '';
   form.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
@@ -1989,7 +2033,7 @@ function fillForm(p) {
   setCalendar(p.calendar === 'LUNAR' ? 'LUNAR' : 'SOLAR');
   $('f-date').value = (p.calendar === 'LUNAR' && p.lunarDate ? p.lunarDate : p.birthDate).replaceAll('-', '.');
   $('f-leap').checked = !!p.leapMonth;
-  state.concern = null; if (p.concernType) setConcern(p.concernType);
+  setConcern(null); (p.concernType || '').split(',').filter(Boolean).forEach(setConcern);
   $('f-concern-text').value = p.concernText || '';
   $('f-concern-count').textContent = (p.concernText || '').length;
   if (p.birthTime) {
@@ -2039,7 +2083,7 @@ form.addEventListener('submit', async e => {
   const body = JSON.stringify({
     name, birthDate: date,
     calendar: state.calendar, leapMonth: state.calendar === 'LUNAR' && $('f-leap').checked,
-    concernType: state.concern || null,
+    concernType: state.concerns?.length ? state.concerns.join(',') : null,
     concernText: $('f-concern-text').value.trim() || null,
     birthTime: unknown ? null : time,
     gender: state.gender,
@@ -2362,10 +2406,12 @@ fbModal.addEventListener('click', e => {
 document.addEventListener('click', e => {
   if (e.target.closest('[data-feedback]')) { e.preventDefault(); openFeedback(); }
   // 고민 풀이 아래 "풀이가 안 맞아요": 내 고민과 받은 풀이를 미리 채워서 열기 → 관리자 페이지에서 보고 단어를 추가한다
-  if (e.target.closest('[data-concern-miss]')) {
-    const c = current()?.saju.concern;
+  const miss = e.target.closest('[data-concern-miss]');
+  if (miss) {
+    const all = current() ? concernsOf(current()) : [];
+    const c = all[+miss.dataset.concernMiss || 0];
     if (!c) return;
-    const text = `[내가 적은 고민]\n${c.text || '(문장 없이 분류만 고름: ' + c.label + ')'}\n\n[받은 풀이]\n${c.topic || c.label} 주제로 풀이가 나왔어요.\n\n[어떤 점이 안 맞았나요? 원했던 답은?]\n`;
+    const text = `[내가 적은 고민]\n${all[0].text ? all[0].text + (all.length > 1 ? ` (고른 분류: ${all.map(x => x.label).join(', ')})` : '') : '(문장 없이 분류만 고름: ' + all.map(x => x.label).join(', ') + ')'}\n\n[받은 풀이]\n${c.topic || c.label} 주제로 풀이가 나왔어요.\n\n[어떤 점이 안 맞았나요? 원했던 답은?]\n`;
     openFeedback({ cat: 'READING', page: 'concern', title: '풀이가 안 맞았다면 알려주세요', text, fixed: true });
     const ta = document.getElementById('fb-text');
     setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 50);
@@ -2398,7 +2444,7 @@ document.getElementById('fb-send').onclick = async () => {
   let start = back?.tab || location.hash.slice(1);
   if (back?.love) state.loveView = back.love;
   if (start === 'journal') { state.listView = start; start = 'list'; }
-  if (start.startsWith('work-')) { state.workView = start.slice(5) === 'study' ? 'study' : 'career'; start = 'career'; }
+  if (start.startsWith('work-')) { state.workView = ['study', 'wealth'].includes(start.slice(5)) ? start.slice(5) : 'career'; start = 'career'; }
   if (start.startsWith('love-')) { const v = start.slice(5); if (['love', 'marriage', 'compat', 'reunion'].includes(v)) state.loveView = v; start = 'marriage'; }
   showTab(['home', 'input', 'result', 'year', 'career', 'marriage', 'family', 'list'].includes(start) ? start : 'home');
 })();

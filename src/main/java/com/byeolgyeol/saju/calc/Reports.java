@@ -67,14 +67,45 @@ public final class Reports {
 
     public static ConcernDto concern(String type, String text, String name, SajuChart chart, int sajuYear) {
         if (type == null) return null;
+        return concern(type, text, chart, sajuYear, ConcernText.match(type, text), true);
+    }
+
+    /**
+     * 고민 분류를 여러 개 골랐을 때: 분류마다 답을 하나씩.
+     * 1개면 예전과 같고(다른 분류까지 찾아봄), 여러 개면 분류마다 그 분류 안에서만 주제를 찾아 겹치지 않게 한다.
+     * 고민 글과 가장 잘 맞는 분류의 답을 맨 앞에 둔다.
+     */
+    public static List<ConcernDto> concerns(List<String> types, String text, String name, SajuChart chart, int sajuYear) {
+        if (types == null || types.isEmpty()) return List.of();
+        if (types.size() == 1) {
+            ConcernDto one = concern(types.get(0), text, name, chart, sajuYear);
+            return one == null ? List.of() : List.of(one);
+        }
+        record Pick(String type, ConcernText.Topic topic, int score, int order) {}
+        List<Pick> picks = new ArrayList<>();
+        for (int i = 0; i < types.size(); i++) {
+            ConcernText.Topic t = ConcernText.matchWithin(types.get(i), text);
+            if (t != null) picks.add(new Pick(types.get(i), t, ConcernText.scoreText(t, text), i));
+        }
+        picks.sort((a, b) -> a.score() != b.score() ? Integer.compare(b.score(), a.score()) : Integer.compare(a.order(), b.order()));
+        List<ConcernDto> out = new ArrayList<>();
+        for (int i = 0; i < picks.size(); i++) {
+            ConcernDto d = concern(picks.get(i).type(), text, chart, sajuYear, picks.get(i).topic(), i == 0);
+            if (d != null) out.add(d);
+        }
+        return out;
+    }
+
+    /** withQuote: 고민 글을 첫 문단에 인용할지 (여러 개면 첫 답에만) */
+    private static ConcernDto concern(String type, String text, SajuChart chart, int sajuYear, ConcernText.Topic topic, boolean withQuote) {
+        if (type == null) return null;
         MoreText.Concern c = MoreText.CONCERN.get(type);
-        ConcernText.Topic topic = ConcernText.match(type, text);
         if (c == null || topic == null) return null;
         Element me = chart.dayMaster().element();
         Relation rel = yearRelation(chart, sajuYear);
         List<String> ps = new ArrayList<>();
         String quote = text == null || text.isBlank() ? null : text.strip();
-        ps.add((quote != null ? "“" + quote + "” — " : "") + topic.empathy());
+        ps.add((quote != null && withQuote ? "“" + quote + "” — " : "") + topic.empathy());
         ps.add(topic.insight());
         ps.add(MoreText.CONCERN_APPROACH.get(me));
         ps.add(sajuYear + "년의 흐름으로 보면, " + MoreText.CONCERN_TIMING.get(rel)
@@ -490,6 +521,93 @@ public final class Reports {
         b.text("연애할 때 조심할 점", "가장 강한 기운 · " + elementName(chart.strongest()), List.of(LoveText.CAUTION.get(chart.strongest())));
         b.items("연애운을 높이는 체크리스트", "할 수 있는 것부터 하나씩 체크해 보세요.", List.of(),
                 LoveText.CHECKLIST.stream().map(t -> new Report.Item("☐", null, t)).toList());
+        return b.build();
+    }
+
+    // ════════════════════ 재물운 ════════════════════
+
+    public static Report wealthBasic(String name, SajuChart chart, int sajuYear) {
+        Element me = chart.dayMaster().element();
+        Relation rel = yearRelation(chart, sajuYear);
+        return new Report.Builder("WEALTH", "재물운", "돈을 대하는 나의 스타일과 올해 재물의 흐름")
+                .text("돈을 대하는 나의 스타일", elementName(me) + "의 기운", List.of(WealthText.STYLE.get(me)))
+                .text(sajuYear + "년 재물의 흐름", rel.koreanName() + "의 해", List.of(WealthText.FLOW.get(rel)))
+                .build();
+    }
+
+    public static Report wealthPremium(String name, SajuChart chart, int sajuYear) {
+        return wealthPremium(name, chart, sajuYear, LocalDate.now(java.time.ZoneId.of("Asia/Seoul")));
+    }
+
+    /** 재물운 심화. 재물의 별 = 재성. 식상(재주)이 재성을 낳는 달은 돈이 들어오기 좋고, 비겁이 들어오는 달은 지출 주의 */
+    static Report wealthPremium(String name, SajuChart chart, int sajuYear, LocalDate today) {
+        Element me = chart.dayMaster().element();
+        Map<Relation, Integer> counts = TenGods.count(chart);
+        String level = TenGods.level(counts.get(Relation.WEALTH));
+        Relation dominant = TenGods.dominant(counts);
+        Relation rel = yearRelation(chart, sajuYear);
+
+        Report.Builder b = new Report.Builder("WEALTH", "재물운 심화 리포트",
+                name + " 님의 돈 버는 방식 · 재물의 별 · 돈이 들어오는 시기를 자세히 읽어요.");
+
+        b.text("한눈에 보는 재물운", null, List.of(
+                name + " 님은 " + elementName(me) + "의 기운으로 돈을 대하는 사람이고, 재물의 별(재성)은 '" + LEVEL_KO.get(level)
+                        + "'이에요. 사주에서 가장 힘이 센 기운은 " + dominant.koreanName() + "이고, 올해 " + sajuYear + "년은 "
+                        + rel.koreanName() + "의 해예요.",
+                WealthText.FLOW.get(rel)));
+        b.text("돈을 대하는 나의 스타일", elementName(me) + "의 기운", List.of(WealthText.STYLE.get(me)));
+        b.text("재물의 별", "재성 · " + LEVEL_KO.get(level), WealthText.STAR.get(level));
+        b.text("나에게 맞는 돈 버는 방식", "가장 힘이 센 기운 · " + dominant.koreanName(), List.of(WealthText.EARN.get(dominant)));
+
+        // 앞으로 12개월 중 재물이 들어오기 좋은 달 TOP 3 + 지출을 조심할 달
+        record Month(LocalDate d, Pillar p, int score, String why) {}
+        List<Month> months = new ArrayList<>();
+        LocalDate first = today.withDayOfMonth(15);
+        for (int i = 0; i < 12; i++) {
+            LocalDate d = first.plusMonths(i);
+            Pillar mp = CALC.monthPillar(d);
+            Relation mr = Relation.between(me, mp.stem().element());
+            int score = mr == Relation.WEALTH ? 3 : mr == Relation.OUTPUT ? 2 : mr == Relation.OFFICER ? 1 : mr == Relation.PEER ? -2 : 0;
+            String why = mr == Relation.WEALTH ? "재물의 별이 들어오는 달" : mr == Relation.OUTPUT ? "재주가 돈이 되는 달"
+                    : mr == Relation.OFFICER ? "신용이 쌓이는 달" : mr == Relation.PEER ? "나가는 돈이 많아지는 달" : "배움에 투자하기 좋은 달";
+            months.add(new Month(d, mp, score, why));
+        }
+        List<Report.Item> best = months.stream()
+                .sorted((x, y) -> Integer.compare(y.score(), x.score()))
+                .limit(3)
+                .sorted(java.util.Comparator.comparing(Month::d))
+                .map(m -> new Report.Item(m.d().getYear() + "년 " + m.d().getMonthValue() + "월", m.p().korean() + "월 · " + m.why(),
+                        m.why().startsWith("재물의 별") ? "수입이 늘거나 돈을 다룰 기회가 생기기 쉬운 달이에요. 들어온 돈의 일부는 바로 따로 떼어두세요."
+                        : m.why().startsWith("재주") ? "내 기술과 아이디어가 돈으로 이어지기 쉬운 달이에요. 부업이나 작은 판매, 포트폴리오를 보여줄 기회를 만들어보세요."
+                        : m.why().startsWith("신용") ? "약속을 지킨 만큼 신뢰가 쌓이는 달이에요. 고정 지출과 계약을 정리하기 좋아요."
+                        : "당장의 수입보다 실력을 쌓는 데 쓰는 돈이 나중에 크게 돌아오는 달이에요."))
+                .toList();
+        b.items("재물이 들어오기 좋은 달 TOP 3", "이번 달부터 12개월 중에서 골랐어요.", List.of(), best);
+        List<Report.Item> careful = months.stream().filter(m -> m.score() < 0)
+                .map(m -> new Report.Item(m.d().getYear() + "년 " + m.d().getMonthValue() + "월", m.p().korean() + "월 · " + m.why(),
+                        "의욕과 만남이 늘면서 지출도 커지기 쉬운 달이에요. 돈을 빌려주거나 충동구매는 한 번 더 생각해보세요."))
+                .toList();
+        if (!careful.isEmpty()) b.items("지출을 조심할 달", "나와 같은 기운이 들어와 돈이 나가기 쉬운 달이에요.", List.of(), careful);
+
+        // 앞으로 3년 재물의 흐름
+        List<Report.Item> years = new ArrayList<>();
+        Relation prev = null;
+        for (int y = sajuYear; y < sajuYear + 3; y++) {
+            Pillar p = CALC.yearPillarOf(y);
+            Relation r = yearRelation(chart, y);
+            String tag = p.korean() + "년 · " + r.koreanName() + (r == Relation.WEALTH ? " · ★ 재물의 별" : "");
+            String text = r == prev
+                    ? "앞 해와 같은 " + r.koreanName() + "의 기운이 한 번 더 이어지는 해예요. 앞 해에 시작한 일이나 모은 돈이 자리를 잡기 좋아요. 새로 벌이기보다 지금의 흐름을 단단하게 다지는 데 마음을 쓰면 좋아요."
+                    : WealthText.FLOW.get(r);
+            prev = r;
+            int score = r == Relation.WEALTH ? 5 : r == Relation.OUTPUT ? 4 : r == Relation.PEER ? 2 : 3;
+            years.add(new Report.Item(y + "년", tag, text, score));
+        }
+        b.items("앞으로 3년 재물의 흐름", null, List.of(), years);
+
+        b.text("돈이 새기 쉬운 습관", "가장 강한 기운 · " + elementName(chart.strongest()), List.of(WealthText.CAUTION.get(chart.strongest())));
+        b.items("재물운을 지키는 체크리스트", "할 수 있는 것부터 하나씩 체크해 보세요.", List.of(),
+                WealthText.CHECKLIST.stream().map(t -> new Report.Item("☐", null, t)).toList());
         return b.build();
     }
 

@@ -4,6 +4,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.time.LocalTime;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -67,6 +68,35 @@ class ReportsTest {
     }
 
     @Test
+    @DisplayName("고민 분류를 여러 개 고르면 분류마다 답이 하나씩, 글과 가장 맞는 분류가 먼저, 인용은 첫 답에만")
+    void concernsMulti() {
+        SajuChart c = calc.calculate(LocalDate.of(1995, 7, 12), null);
+        List<Reports.ConcernDto> list = Reports.concerns(List.of("LOVE", "CAREER"), "회사를 그만두고 이직할까 고민돼요", "가", c, 2026);
+        assertEquals(2, list.size());
+        assertEquals("CAREER", list.get(0).type());
+        assertEquals("LOVE", list.get(1).type());
+        assertTrue(list.get(0).paragraphs().get(0).startsWith("“"));
+        assertFalse(list.get(1).paragraphs().get(0).startsWith("“"));
+        assertFalse(list.get(0).topic().equals(list.get(1).topic()));
+        assertEquals(1, Reports.concerns(List.of("SELF"), "요즘 너무 지쳐요", "가", c, 2026).size());
+        assertTrue(Reports.concerns(List.of(), "x", "가", c, 2026).isEmpty());
+    }
+
+    @Test
+    @DisplayName("재물운 심화는 무료 재물운보다 3배 이상 길고, 좋은 달 3개 · 3년 흐름 · 체크리스트가 있다")
+    void wealthLonger() {
+        for (LocalDate d = LocalDate.of(1985, 1, 1); d.getYear() < 1995; d = d.plusDays(31)) {
+            SajuChart c = calc.calculate(d, null);
+            int free = Reports.wealthBasic("가", c, 2026).length();
+            Report r = Reports.wealthPremium("가", c, 2026, LocalDate.of(2026, 11, 6));
+            assertTrue(r.length() >= free * 3, "재물운 " + r.length() + " < 3 × " + free);
+            assertEquals(3, r.sections().stream().filter(s -> s.title().startsWith("재물이 들어오기")).findFirst().orElseThrow().items().size());
+            assertEquals(3, r.sections().stream().filter(s -> s.title().startsWith("앞으로 3년")).findFirst().orElseThrow().items().size());
+            assertTrue(r.sections().stream().anyMatch(s -> s.items().stream().anyMatch(i -> i.label().equals("☐"))));
+        }
+    }
+
+    @Test
     @DisplayName("두 사람 재회운: 점수는 35~95점, 심화는 기본보다 3배 이상 길다")
     void reunionPair() {
         SajuChart other = calc.calculate(LocalDate.of(1993, 3, 5), null);
@@ -122,6 +152,7 @@ class ReportsTest {
                     Reports.compatBasic("가", c, "나", other), Reports.compatPremium("가", c, "나", other),
                     Reports.studyBasic("가", c, 2026), Reports.studyPremium("가", c, 2026),
                     Reports.loveBasic("가", "F", c, 2026), Reports.lovePremium("가", "M", c, 2026),
+                    Reports.wealthBasic("가", c, 2026), Reports.wealthPremium("가", c, 2026),
                     Reports.reunionBasic("가", c, "나", other, 2026), Reports.reunionPremium("가", c, "나", other, 2026)}) {
                 for (Report.Section s : r.sections()) {
                     assertFalse(s.paragraphs().isEmpty() && s.items().isEmpty(), r.code() + " " + s.title());

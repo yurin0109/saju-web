@@ -105,6 +105,7 @@ public class ProfileService {
                 yield Reports.reunionPremium(p.getName(), chart, ex.getName(), chart(ex), year);
             }
             case LOVE -> Reports.lovePremium(p.getName(), p.getGender(), chart, year);
+            case WEALTH -> Reports.wealthPremium(p.getName(), chart, year);
             case FAMILY -> Reports.familyPremium(p.getName(), chart, year);
             case STUDY -> Reports.studyPremium(p.getName(), chart, year);
             case COMPAT -> {
@@ -237,7 +238,7 @@ public class ProfileService {
         if (req.lunar()) p.setCalendar("LUNAR", req.birthDate(), req.leap());
         else p.setCalendar("SOLAR", null, null);
         String text = blankToNull(req.concernText());
-        p.setConcern(req.concernType(), text);
+        p.setConcern(req.concernTypes(), text);
     }
 
     @Transactional

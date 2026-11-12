@@ -5,74 +5,253 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>관리자 · Among the Stars</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@500;600&display=swap" rel="stylesheet">
 <style>
-  :root { --bg: #100d18; --card: #1b1626; --card-2: #221c2f; --line: #393044; --text: #faf6ff; --body: #d4cbd5; --muted: #b6aabd; --accent: #ff70cf; --accent-soft: rgba(255,112,207,.1); --danger: #ff8a8a; }
+  :root {
+    --bg: #0e0b16; --side: #14101e; --card: #1a1525; --card-2: #221c30; --line: #2f2740; --line-2: #3d3352;
+    --text: #faf6ff; --body: #d6cdd8; --muted: #9f93a8; --accent: #ff70cf; --accent-soft: rgba(255,112,207,.12);
+    --gold: #f4c97a; --gold-soft: rgba(244,201,122,.12); --mint: #7fe0c3; --mint-soft: rgba(127,224,195,.12);
+    --sky: #8fb8ff; --sky-soft: rgba(143,184,255,.12); --danger: #ff8a8a; --danger-soft: rgba(255,138,138,.12);
+  }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--body); font-family: "Noto Sans KR", system-ui, sans-serif; font-size: 14px; }
-  main { max-width: 1100px; margin: 0 auto; padding: 32px 16px 64px; display: flex; flex-direction: column; gap: 24px; }
-  h1 { color: var(--text); font-size: 24px; margin: 0; font-weight: 600; }
-  h2 { color: var(--text); font-size: 17px; margin: 0 0 12px; font-weight: 600; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
-  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  input, select { background: var(--card-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; font-size: 14px; }
-  button { cursor: pointer; border-radius: 8px; border: 1px solid var(--line); background: var(--card-2); color: var(--text); padding: 8px 12px; font-size: 13px; }
-  button.primary { background: var(--accent); color: #21132f; border-color: var(--accent); font-weight: 600; }
-  button.danger { color: var(--danger); }
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-  .stat { background: var(--card-2); border-radius: 10px; padding: 14px; }
-  .stat b { display: block; color: var(--text); font-size: 22px; margin-top: 4px; }
-  .stat span { font-size: 12px; color: var(--muted); }
-  table { width: 100%; border-collapse: collapse; }
-  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { color: var(--muted); font-weight: 500; font-size: 12px; white-space: nowrap; }
-  td.msg { color: var(--text); white-space: pre-wrap; word-break: break-word; min-width: 260px; }
-  tr.done td { opacity: .5; }
-  .tag { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 12px; white-space: nowrap; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; background: var(--bg); color: var(--body); font-family: "Noto Sans KR", system-ui, sans-serif; font-size: 14px; }
+  button, input, select { font-family: inherit; }
+  a { color: inherit; }
+  .serif { font-family: "Noto Serif KR", serif; }
+
+  /* 로그인 */
+  .login-wrap { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px;
+    background: radial-gradient(600px 400px at 50% 20%, rgba(255,112,207,.10), transparent 70%); }
+  .login-card { width: 100%; max-width: 400px; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 36px 28px; text-align: center; }
+  .login-card .moon { font-size: 36px; }
+  .login-card h1 { color: var(--text); font-size: 22px; margin: 10px 0 4px; font-weight: 600; }
+  .login-card p { margin: 0; }
+  .login-card form { margin-top: 24px; display: flex; flex-direction: column; gap: 10px; }
+
+  .input { width: 100%; background: var(--card-2); color: var(--text); border: 1px solid var(--line-2); border-radius: 10px; padding: 12px 14px; font-size: 14px; }
+  .input:focus { outline: none; border-color: var(--accent); }
+  .btn { cursor: pointer; border-radius: 10px; border: 1px solid var(--line-2); background: var(--card-2); color: var(--text); padding: 9px 14px; font-size: 13px; white-space: nowrap; }
+  .btn:hover { border-color: var(--accent); }
+  .btn.primary { background: var(--accent); color: #21132f; border-color: var(--accent); font-weight: 700; padding: 12px 16px; font-size: 14px; }
+  .btn.ghost { background: transparent; }
+  .btn.sm { padding: 6px 10px; font-size: 12px; border-radius: 8px; }
+  .btn.ok { color: var(--mint); }
+  .btn.danger { color: var(--danger); }
+  .btn.danger.armed { background: var(--danger-soft); border-color: var(--danger); }
   .muted { color: var(--muted); font-size: 12px; }
-  .err { color: var(--danger); min-height: 1em; }
+  .err { color: var(--danger); min-height: 1.2em; font-size: 13px; margin-top: 4px !important; }
+
+  /* 레이아웃 */
+  .shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+  .side { background: var(--side); border-right: 1px solid var(--line); padding: 24px 14px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 0; height: 100vh; }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 0 10px 22px; color: var(--text); font-size: 16px; font-weight: 600; }
+  .brand small { display: block; color: var(--muted); font-size: 11px; font-weight: 400; font-family: "Noto Sans KR", sans-serif; }
+  .nav { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; background: none; border: 0; color: var(--body); padding: 11px 12px; border-radius: 10px; cursor: pointer; font-size: 14px; }
+  .nav:hover { background: var(--card); }
+  .nav[aria-current="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+  .nav .count { margin-left: auto; background: var(--accent); color: #21132f; border-radius: 999px; font-size: 11px; font-weight: 700; padding: 1px 7px; }
+  .nav .count:empty { display: none; }
+  .side-foot { margin-top: auto; display: flex; flex-direction: column; gap: 4px; }
+
+  .main { padding: 32px 36px 64px; max-width: 1180px; width: 100%; }
+  .head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+  .head h2 { color: var(--text); font-size: 24px; margin: 0; font-weight: 600; }
+  .head p { margin: 6px 0 0; }
+  .head .tools { display: flex; gap: 8px; align-items: center; }
+  .head .tools .search { width: 240px; }
+  .page[hidden] { display: none; }
+
+  /* 대시보드 */
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; display: flex; gap: 14px; align-items: center; }
+  .stat .ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; font-size: 20px; flex: none; }
+  .stat span { color: var(--muted); font-size: 12px; }
+  .stat b { display: block; color: var(--text); font-size: 24px; font-weight: 700; margin-top: 2px; letter-spacing: -.3px; }
+  .ic.pink { background: var(--accent-soft); } .ic.gold { background: var(--gold-soft); } .ic.mint { background: var(--mint-soft); }
+  .ic.sky { background: var(--sky-soft); } .ic.red { background: var(--danger-soft); }
+  .stat.alert { border-color: var(--accent); }
+
+  .grid2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; margin-top: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+  .card h3 { color: var(--text); font-size: 15px; margin: 0 0 14px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+  .card h3 a { font-size: 12px; color: var(--muted); font-weight: 400; cursor: pointer; text-decoration: none; }
+  .card h3 a:hover { color: var(--accent); }
+  .bars { display: flex; flex-direction: column; gap: 12px; }
+  .bar-row { display: grid; grid-template-columns: 110px 1fr 32px; gap: 10px; align-items: center; font-size: 13px; }
+  .bar { height: 8px; background: var(--card-2); border-radius: 999px; overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+  .bar-row b { color: var(--text); text-align: right; font-weight: 500; }
+  .mini { display: flex; flex-direction: column; }
+  .mini-item { display: flex; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .mini-item:last-child { border-bottom: 0; }
+  .mini-item:hover .mini-text { color: var(--text); }
+  .mini-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* 의견 */
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .chip { cursor: pointer; border: 1px solid var(--line-2); background: transparent; color: var(--body); border-radius: 999px; padding: 7px 13px; font-size: 13px; }
+  .chip[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); }
+  .chip em { font-style: normal; color: var(--muted); margin-left: 4px; font-size: 12px; }
+  .chip[aria-pressed="true"] em { color: var(--accent); }
+  .search { max-width: 260px; padding: 9px 12px; }
+  .fb-list { display: flex; flex-direction: column; gap: 12px; }
+  .fb { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+  .fb.new { border-left: 3px solid var(--accent); }
+  .fb.done { opacity: .55; }
+  .fb-top { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .fb-top .who { margin-left: auto; }
+  .tag { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; font-size: 12px; white-space: nowrap; background: var(--card-2); color: var(--body); }
+  .tag.BUG { background: var(--danger-soft); color: var(--danger); } .tag.IDEA { background: var(--gold-soft); color: var(--gold); }
+  .tag.READING { background: var(--accent-soft); color: var(--accent); } .tag.ETC { background: var(--sky-soft); color: var(--sky); }
+  .tag.state-done { background: var(--mint-soft); color: var(--mint); }
+  .fb-msg { color: var(--text); white-space: pre-wrap; word-break: break-word; line-height: 1.65; }
+  .qa { display: grid; gap: 8px; }
+  .qa div { background: var(--card-2); border-radius: 10px; padding: 10px 12px; }
+  .qa dt { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
+  .qa dd { margin: 0; color: var(--text); white-space: pre-wrap; word-break: break-word; line-height: 1.6; }
+  .qa .want dd { color: var(--accent); }
+  .fb-actions { display: flex; gap: 6px; justify-content: flex-end; }
+  .empty { text-align: center; padding: 48px 16px; color: var(--muted); background: var(--card); border: 1px dashed var(--line-2); border-radius: 14px; }
+  .empty b { display: block; font-size: 28px; margin-bottom: 8px; }
+
+  /* 회원 */
+  .table { width: 100%; border-collapse: collapse; }
+  .table th, .table td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--line); }
+  .table th { color: var(--muted); font-weight: 500; font-size: 12px; white-space: nowrap; }
+  .table td.name { color: var(--text); font-weight: 500; }
+  .table tr:last-child td { border-bottom: 0; }
   .scroll { overflow-x: auto; }
-  #app[hidden], #login[hidden] { display: none; }
+  .table tr.click { cursor: pointer; }
+  .table tr.click:hover td { background: rgba(255,255,255,.02); }
+  .table tr.open td { background: var(--card-2); }
+  .table tr.detail td { background: var(--card-2); padding: 4px 16px 18px; }
+  .table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .table th.num { text-align: right; }
+  .clip { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .detail-grid h4 { color: var(--muted); font-size: 12px; font-weight: 500; margin: 10px 0 6px; }
+  .detail-grid ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .detail-grid li { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; color: var(--text); font-size: 13px; }
+  .quote { color: var(--text); white-space: pre-wrap; word-break: break-word; line-height: 1.65; background: var(--card); border-radius: 10px; padding: 12px 14px; margin-top: 8px; }
+  .tag.PAID { background: var(--sky-soft); color: var(--sky); } .tag.OPENED { background: var(--mint-soft); color: var(--mint); } .tag.REFUNDED { background: var(--danger-soft); color: var(--danger); }
+  .stat { cursor: pointer; transition: border-color .15s; } .stat:hover { border-color: var(--accent); }
+  .stat .go { margin-left: auto; color: var(--muted); font-size: 18px; }
+
+  .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px); background: var(--text); color: #1a1525; padding: 10px 18px; border-radius: 999px; font-size: 13px; opacity: 0; transition: .2s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%); }
+
+  @media (max-width: 960px) {
+    .detail-grid { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .grid2 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 760px) {
+    .shell { grid-template-columns: 1fr; }
+    .side { position: sticky; top: 0; z-index: 5; height: auto; flex-direction: row; align-items: center; padding: 10px 12px; gap: 2px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+    .brand { padding: 0 8px 0 4px; font-size: 0; gap: 0; } .brand .serif, .brand small { display: none; } .brand span:first-child { font-size: 20px; }
+    .nav { width: auto; padding: 8px 10px; font-size: 13px; white-space: nowrap; }
+    .side-foot { margin: 0 0 0 auto; flex-direction: row; }
+    .side-foot .nav .lbl { display: none; }
+    .main { padding: 20px 16px 48px; }
+    .head h2 { font-size: 20px; }
+    .stats { gap: 10px; } .stat { padding: 14px; gap: 10px; } .stat .ic { width: 36px; height: 36px; font-size: 17px; } .stat b { font-size: 19px; }
+    .search { max-width: none; flex: 1; }
+    .head .tools { width: 100%; } .head .tools .search { width: auto; }
+    .fb-top .who { margin-left: 0; width: 100%; }
+  }
 </style>
 </head>
 <body>
-<main>
-  <div class="row" style="justify-content:space-between">
-    <h1>🌙 Among the Stars 관리자</h1>
-    <a href="/" class="muted" style="color:var(--muted)">사이트로 돌아가기</a>
-  </div>
 
-  <section class="card" id="login">
-    <h2>관리자 확인</h2>
-    <form class="row" id="login-form">
-      <input type="password" id="key" placeholder="관리자 비밀번호 (ADMIN_PASSWORD)" autocomplete="current-password" style="flex:1;min-width:220px">
-      <button class="primary" type="submit">들어가기</button>
+<div class="login-wrap" id="login">
+  <div class="login-card">
+    <div class="moon">🌙</div>
+    <h1 class="serif">Among the Stars</h1>
+    <p class="muted">관리자 페이지</p>
+    <form id="login-form">
+      <input class="input" type="password" id="key" placeholder="관리자 비밀번호" autocomplete="current-password" aria-label="관리자 비밀번호">
+      <button class="btn primary" type="submit">들어가기</button>
+      <p class="err" id="login-err" role="alert"></p>
     </form>
-    <p class="err" id="login-err"></p>
-    <p class="muted">비밀번호는 이 탭을 닫으면 사라져요. 10번 틀리면 15분 동안 잠겨요.</p>
-  </section>
+    <p class="muted" style="margin-top:8px">탭을 닫으면 자동으로 나가져요 · 10번 틀리면 15분 잠금</p>
+  </div>
+</div>
 
-  <div id="app" hidden>
-    <section class="card">
-      <div class="row" style="justify-content:space-between"><h2>한눈에 보기</h2>
-        <div class="row"><button id="refresh">새로고침</button><button id="logout">나가기</button></div></div>
+<div class="shell" id="app" hidden>
+  <aside class="side">
+    <div class="brand"><span>🌙</span><div><span class="serif">Among the Stars</span><small>관리자</small></div></div>
+    <button class="nav" data-page="dash" aria-current="true">📊 <span class="lbl">한눈에 보기</span></button>
+    <button class="nav" data-page="fb">💬 <span class="lbl">의견함</span><span class="count" id="nav-new"></span></button>
+    <button class="nav" data-page="profiles">🔮 <span class="lbl">저장된 사주</span></button>
+    <button class="nav" data-page="buys">💳 <span class="lbl">구매 · 매출</span></button>
+    <button class="nav" data-page="members">👤 <span class="lbl">회원</span></button>
+    <div class="side-foot">
+      <a class="nav" href="/" target="_blank" rel="noopener">↗ <span class="lbl">사이트 열기</span></a>
+      <button class="nav" id="logout">⎋ <span class="lbl">나가기</span></button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <section class="page" id="page-dash">
+      <div class="head">
+        <div><h2>한눈에 보기</h2><p class="muted" id="updated"></p></div>
+        <div class="tools"><button class="btn" data-refresh>↻ 새로고침</button></div>
+      </div>
       <div class="stats" id="stats"></div>
+      <div class="grid2">
+        <div class="card"><h3>최근 구매 <a data-go="buys">전체 보기 →</a></h3><div class="mini" id="recent-buys"></div></div>
+        <div class="card"><h3>상품별 매출</h3><div class="bars" id="bars-product"></div></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><h3>최근 의견 <a data-go="fb">전체 보기 →</a></h3><div class="mini" id="recent"></div></div>
+        <div class="card"><h3>고민 종류 <a data-go="profiles">사주 보기 →</a></h3><div class="bars" id="bars-concern"></div></div>
+      </div>
     </section>
 
-    <section class="card" style="margin-top:24px">
-      <div class="row" style="justify-content:space-between"><h2>건의사항</h2>
-        <select id="fb-filter"><option value="new">처리 안 한 것</option><option value="concern">고민 풀이가 안 맞아요</option><option value="all">전체</option></select></div>
-      <div class="scroll"><table><thead><tr><th>날짜</th><th>종류</th><th>내용</th><th>화면</th><th>보낸 사람</th><th></th></tr></thead>
-        <tbody id="fb-rows"></tbody></table></div>
+    <section class="page" id="page-fb" hidden>
+      <div class="head">
+        <div><h2>의견함</h2><p class="muted">건의사항과 "풀이 안 맞아요" 내용이 모여요. 반영했으면 <b>처리 완료</b>를 눌러주세요.</p></div>
+        <div class="tools"><input class="input search" id="fb-q" placeholder="내용 · 아이디 검색" aria-label="의견 검색"><button class="btn" data-refresh>↻</button></div>
+      </div>
+      <div class="filters" id="fb-filters"></div>
+      <div class="fb-list" id="fb-list"></div>
     </section>
 
-    <section class="card" style="margin-top:24px">
-      <h2>회원</h2>
-      <p class="muted">비밀번호는 암호화되어 저장돼서 관리자도 볼 수 없어요.</p>
-      <div class="scroll"><table><thead><tr><th>아이디</th><th>가입일</th><th>마지막 로그인</th><th>상태</th><th></th></tr></thead>
+    <section class="page" id="page-profiles" hidden>
+      <div class="head">
+        <div><h2>저장된 사주</h2><p class="muted">개인정보 보호를 위해 생년월일은 <b>태어난 해</b>만 보여요. 줄을 누르면 적은 고민 전체가 보여요.</p></div>
+        <div class="tools"><input class="input search" id="pf-q" placeholder="별명 · 아이디 · 고민 검색" aria-label="사주 검색"><button class="btn" data-refresh>↻</button></div>
+      </div>
+      <div class="filters" id="pf-filters"></div>
+      <div class="card scroll"><table class="table"><thead><tr><th>별명</th><th>누가</th><th>태어난 해</th><th>고민</th><th>구매</th><th>저장일</th></tr></thead>
+        <tbody id="pf-rows"></tbody></table></div>
+    </section>
+
+    <section class="page" id="page-buys" hidden>
+      <div class="head">
+        <div><h2>구매 · 매출</h2><p class="muted" id="buy-sum"></p></div>
+        <div class="tools"><input class="input search" id="by-q" placeholder="상품 · 아이디 · 사주 검색" aria-label="구매 검색"><button class="btn" data-refresh>↻</button></div>
+      </div>
+      <div class="filters" id="by-filters"></div>
+      <div class="card scroll"><table class="table"><thead><tr><th>상품</th><th>금액</th><th>누가</th><th>어떤 사주</th><th>상태</th><th>구매일</th></tr></thead>
+        <tbody id="by-rows"></tbody></table></div>
+    </section>
+
+    <section class="page" id="page-members" hidden>
+      <div class="head">
+        <div><h2>회원</h2><p class="muted">비밀번호는 암호화되어 저장돼서 관리자도 볼 수 없어요. 줄을 누르면 그 회원의 사주와 구매가 보여요.</p></div>
+        <div class="tools"><input class="input search" id="mb-q" placeholder="아이디 검색" aria-label="회원 검색"><button class="btn" data-refresh>↻</button></div>
+      </div>
+      <div class="card scroll"><table class="table"><thead><tr><th>아이디</th><th>사주</th><th>구매</th><th>쓴 금액</th><th>가입일</th><th>마지막 로그인</th><th>상태</th><th></th></tr></thead>
         <tbody id="member-rows"></tbody></table></div>
     </section>
-  </div>
-</main>
-<script src="/admin.js?v=1"></script>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+<script src="/admin.js?v=4"></script>
 </body>
 </html>

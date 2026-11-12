@@ -48,6 +48,7 @@ public class AuthService {
         Member m = new Member(username, PasswordHasher.hash(req.password()));
         String code = RecoveryCode.generate();
         m.changeRecovery(RecoveryCode.hash(code));
+        m.loginSucceeded(java.time.LocalDateTime.now());   // 가입하면 바로 로그인되므로 마지막 로그인도 기록
         return new Signed(members.save(m), code);
     }
 

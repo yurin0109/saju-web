@@ -293,6 +293,7 @@ final class ConcernText {
      * 3) 그래도 없으면 고른 분류의 기본 주제
      */
     static Topic match(String type, String text) {
+        if (type == null) return null;
         List<Topic> topics = TOPICS.get(type);
         if (topics == null) return null;
         Topic fallback = topics.get(topics.size() - 1);
@@ -315,6 +316,27 @@ final class ConcernText {
             }
         }
         return best != null ? best : fallback;
+    }
+
+    /** 고른 분류 안에서만 찾기 (여러 분류를 골랐을 때 서로 같은 주제가 나오지 않게) */
+    static Topic matchWithin(String type, String text) {
+        if (type == null) return null;
+        List<Topic> topics = TOPICS.get(type);
+        if (topics == null) return null;
+        Topic fallback = topics.get(topics.size() - 1);
+        if (text == null || text.isBlank()) return fallback;
+        String t = text.replace(" ", "").toLowerCase();
+        Topic best = null;
+        int bestScore = 0;
+        for (Topic topic : topics) {
+            int sc = score(topic, t);
+            if (sc > bestScore) { best = topic; bestScore = sc; }
+        }
+        return best != null ? best : fallback;
+    }
+
+    static int scoreText(Topic topic, String text) {
+        return text == null ? 0 : score(topic, text.replace(" ", "").toLowerCase());
     }
 
     /** 맞는 단어 수 (부정 표현이 바로 뒤따르는 단어는 빼고) */

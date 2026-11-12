@@ -35,8 +35,9 @@ public record ProfileRequest(
         @Size(max = 30)
         String birthPlace,
 
-        /** 요즘 고민 분류 (선택) */
-        @Pattern(regexp = "LOVE|CAREER|STUDY|MONEY|RELATION|SELF|FUTURE", message = "고민 분류 값이 올바르지 않아요.")
+        /** 요즘 고민 분류 (선택, 최대 3개를 쉼표로 이어서. 예: "LOVE,CAREER") */
+        @Pattern(regexp = "(LOVE|CAREER|STUDY|MONEY|RELATION|SELF|FUTURE)(,(LOVE|CAREER|STUDY|MONEY|RELATION|SELF|FUTURE)){0,2}",
+                message = "고민 분류는 3개까지 고를 수 있어요.")
         String concernType,
 
         /** 요즘 고민 (선택) */
@@ -49,5 +50,11 @@ public record ProfileRequest(
 
     public boolean leap() {
         return lunar() && Boolean.TRUE.equals(leapMonth);
+    }
+
+    /** 고른 고민 분류 목록 (겹치는 것은 하나로) */
+    public java.util.List<String> concernTypes() {
+        if (concernType == null || concernType.isBlank()) return java.util.List.of();
+        return java.util.Arrays.stream(concernType.split(",")).map(String::strip).filter(x -> !x.isEmpty()).distinct().limit(3).toList();
     }
 }

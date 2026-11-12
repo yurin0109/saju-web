@@ -12,10 +12,10 @@ import static org.junit.jupiter.api.Assertions.*;
 class ProductTest {
 
     @Test
-    @DisplayName("개별 리포트는 자기 자신만, 묶음은 궁합 · 재회운을 뺀 6종을 연다")
+    @DisplayName("개별 리포트는 자기 자신만, 묶음은 궁합 · 재회운을 뺀 7종을 연다")
     void unlocks() {
         assertEquals(EnumSet.of(Product.YEAR), Product.YEAR.unlocks());
-        assertEquals(6, Product.BUNDLE.unlocks().size());
+        assertEquals(7, Product.BUNDLE.unlocks().size());
         assertFalse(Product.BUNDLE.unlocks().contains(Product.REUNION), "재회운은 상대마다 따로 구매");
         assertTrue(Product.REUNION.perPartner() && Product.COMPAT.perPartner() && !Product.LOVE.perPartner());
         assertTrue(Product.BUNDLE.unlocks().contains(Product.LOVE));

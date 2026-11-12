@@ -118,3 +118,5 @@ CREATE TABLE IF NOT EXISTS feedback (
 -- ALTER TABLE profile ADD COLUMN partner_of BIGINT NULL, ADD COLUMN free_partner_id BIGINT NULL;
 -- 재회운 상대 (v15): partner_kind = COMPAT / REUNION, 재회운 무료 상대 = free_reunion_id
 -- ALTER TABLE profile ADD COLUMN partner_kind VARCHAR(10) NULL, ADD COLUMN free_reunion_id BIGINT NULL;
+-- 고민 여러 개 고르기 (v21): 고른 분류 전체를 쉼표로 (예: LOVE,CAREER). concern_type 은 첫 번째 분류
+-- ALTER TABLE profile ADD COLUMN concern_types VARCHAR(40) NULL;

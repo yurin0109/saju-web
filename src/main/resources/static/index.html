@@ -400,6 +400,7 @@
   .art-hero { height: auto; min-height: 170px; padding: 12px 20px; gap: 18px; flex-wrap: wrap; }
   .art { width: 220px; height: 140px; flex-shrink: 0; }
   .study-hero { background: radial-gradient(circle at 30% 50%, rgba(143,91,214,.25), transparent 50%), radial-gradient(circle at 75% 40%, rgba(255,210,122,.12), transparent 45%), var(--card-2); }
+  .wealth-hero { background: radial-gradient(circle at 30% 50%, rgba(244,201,122,.22), transparent 50%), radial-gradient(circle at 75% 40%, rgba(255,112,207,.10), transparent 45%), var(--card-2); }
   .love-hero { background: radial-gradient(circle at 30% 45%, rgba(255,112,207,.22), transparent 45%), radial-gradient(circle at 75% 60%, rgba(255,154,122,.16), transparent 45%), var(--card-2); }
   .reunion-hero { background: radial-gradient(circle at 30% 45%, rgba(244,197,106,.22), transparent 45%), radial-gradient(circle at 75% 60%, rgba(255,90,122,.16), transparent 45%), var(--card-2); }
   .cp-hero { display: flex; align-items: center; justify-content: center; gap: 28px; padding: 24px 16px; border-radius: 14px;
@@ -671,6 +672,7 @@
   .acct-more { border-top: 1px solid var(--line); padding-top: 12px; }
   .acct-more summary { cursor: pointer; font-size: 14px; color: var(--body); padding: 4px 0; }
   .acct-more .auth-form { margin-top: 12px; }
+  .concern-stack { display: flex; flex-direction: column; gap: 16px; }
   .concern-card { padding: 30px; display: flex; flex-direction: column; gap: 14px; border-color: var(--accent-line); }
   .concern-card h3 { font-family: var(--serif); font-size: 22px; font-weight: 500; }
   #concern { scroll-margin-top: 104px; }
@@ -971,7 +973,7 @@
     <button class="tab" role="tab" data-tab="input" aria-selected="false">사주 입력</button>
     <button class="tab" role="tab" data-tab="result" aria-selected="false">내 결과</button>
     <button class="tab" role="tab" data-tab="year" aria-selected="false"><span class="this-year">올해</span>&nbsp;운세</button>
-    <button class="tab" role="tab" data-tab="career" aria-selected="false">직장 · 학업</button>
+    <button class="tab" role="tab" data-tab="career" aria-selected="false">직장 · 재물 · 학업</button>
     <button class="tab" role="tab" data-tab="marriage" aria-selected="false">사랑운</button>
     <button class="tab" role="tab" data-tab="family" aria-selected="false">가족운</button>
     <button class="tab" role="tab" data-tab="list" aria-selected="false">내 사주 목록</button>
@@ -1134,7 +1136,7 @@
       <hr class="divider">
 
       <div class="field">
-        <span class="label">요즘 가장 큰 고민 <span class="help" style="display:inline">(선택)</span></span>
+        <span class="label">요즘 고민 <span class="help" style="display:inline">(선택 · <span id="f-concern-picked">여러 개 골라도 돼요 (최대 3개)</span>)</span></span>
         <div class="concern-chips" id="f-concern">
           <button type="button" data-value="LOVE" aria-pressed="false">💞 연애 · 결혼</button>
           <button type="button" data-value="CAREER" aria-pressed="false">🧭 일 · 진로</button>
@@ -1319,7 +1321,7 @@
         <table class="guide-table">
           <tr><th>홈</th><td>서비스 소개와 이용 순서</td></tr>
           <tr><th>사주 입력</th><td>새 사주 추가 · 기존 사주 정보 수정</td></tr>
-          <tr><th>무료 · 유료</th><td><b>무료</b>: 모든 탭의 기본 풀이(내 결과 · 올해 운세 · 직장 · 학업 · 사랑운 · 가족운) / <b>유료</b>: 각 탭 아래의 심화 리포트 8종 (사주마다 따로 구매, 궁합 · 재회운은 상대 1명마다 구매)</td></tr>
+          <tr><th>무료 · 유료</th><td><b>무료</b>: 모든 탭의 기본 풀이(내 결과 · 올해 운세 · 직장 · 재물 · 학업 · 사랑운 · 가족운) / <b>유료</b>: 각 탭 아래의 심화 리포트 9종 (사주마다 따로 구매, 궁합 · 재회운은 상대 1명마다 구매)</td></tr>
           <tr><th>내 결과</th><td>여덟 글자, 오행 비율, 핵심 성향, 강한 기운과 채우면 좋은 기운, 성찰 질문</td></tr>
           <tr><th>올해 운세</th><td>올해 간지와 나의 관계로 읽는 흐름, 주의 포인트, 풀이 근거</td></tr>
           <tr><th>직장운</th><td>십성 분포로 읽는 일하는 스타일, 잘 맞는 분야, 올해 일의 흐름</td></tr>
@@ -1376,7 +1378,7 @@
         <h4>환불할 수 있는 경우</h4>
         <ul>
           <li>구매 후 <b>7일 이내</b>이고, 구매한 심화 리포트를 <b>한 번도 열어보지 않은 경우</b> 전액 환불해드려요.</li>
-          <li>묶음(6종)은 묶음 안의 리포트를 하나도 열지 않았을 때 전액 환불돼요.</li>
+          <li>묶음(7종)은 묶음 안의 리포트를 하나도 열지 않았을 때 전액 환불돼요.</li>
           <li>리포트가 오류로 열리지 않거나 내용이 잘못 나온 경우에는 열어봤더라도 환불해드려요. 이용 안내의 문의로 알려주세요.</li>
         </ul>
         <h4>환불할 수 없는 경우</h4>
@@ -1470,6 +1472,6 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="/app.js?v=19"></script>
+<script src="/app.js?v=20"></script>
 </body>
 </html>

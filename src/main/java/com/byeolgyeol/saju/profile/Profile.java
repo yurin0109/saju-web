@@ -49,9 +49,16 @@ public class Profile {
     @Column(name = "leap_month")
     private Boolean leapMonth;
 
-    /** 요즘 고민 분류: LOVE / CAREER / STUDY / MONEY / RELATION / SELF / FUTURE */
+    /** 요즘 고민 분류: LOVE / CAREER / STUDY / MONEY / RELATION / SELF / FUTURE (여러 개 고르면 첫 번째) */
     @Column(name = "concern_type", length = 10)
     private String concernType;
+
+    /**
+     * 고른 고민 분류 전체 (최대 3개, 쉼표로 이어서 예: "LOVE,CAREER").
+     * 예전 concern_type 칸은 길이가 10이라 따로 새 칸을 둔다 (새 칸은 서버가 켜질 때 자동으로 생김)
+     */
+    @Column(name = "concern_types", length = 40)
+    private String concernTypes;
 
     @Column(name = "concern_text", length = 200)
     private String concernText;
@@ -107,9 +114,18 @@ public class Profile {
         this.leapMonth = leapMonth;
     }
 
-    public void setConcern(String concernType, String concernText) {
-        this.concernType = concernType;
+    /** types: 고른 분류 목록 (없으면 null 또는 빈 목록) */
+    public void setConcern(java.util.List<String> types, String concernText) {
+        boolean none = types == null || types.isEmpty();
+        this.concernType = none ? null : types.get(0);
+        this.concernTypes = none ? null : String.join(",", types);
         this.concernText = concernText;
+    }
+
+    /** 고른 고민 분류 목록. 예전 데이터(concern_types 가 없음)는 concern_type 하나 */
+    public java.util.List<String> getConcernTypes() {
+        if (concernTypes != null && !concernTypes.isBlank()) return java.util.List.of(concernTypes.split(","));
+        return concernType == null ? java.util.List.of() : java.util.List.of(concernType);
     }
 
     public void setPartnerOf(Long ownerId) { this.partnerOf = ownerId; }

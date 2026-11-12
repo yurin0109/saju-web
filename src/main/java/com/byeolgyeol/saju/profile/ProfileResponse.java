@@ -81,13 +81,16 @@ public record ProfileResponse(
                        List<Long> reunionPartners,
                        YearDto thisYear, CareerDto career, MarriageDto marriage,
                        Report reunion, Report family, Report study, Reports.ConcernDto concern,
+                       List<Reports.ConcernDto> concerns,
                        /** 연애운 (애정운) 무료 기본 풀이 */
                        Report love,
+                       Report wealth,
                        /** 내 사주에 있는 신살 (역마살 · 도화살 · 천을귀인 …) + 전체 신살 설명 */
                        List<ShinSal.Found> shinsal, List<ShinSal.Info> shinsalGuide) {}
 
     public static ProfileResponse of(Profile p, SajuChart chart, int currentSajuYear, Pillar yearPillar,
                                      Set<Product> owned, List<Long> compatPartners, List<Long> reunionPartners) {
+        List<Reports.ConcernDto> concerns = Reports.concerns(p.getConcernTypes(), p.getConcernText(), p.getName(), chart, currentSajuYear);
         // 기둥 (시 · 일 · 월 · 년 순서가 전통 표기)
         List<PillarDto> pillars = List.of(
                 PillarDto.of("시주", chart.hour()),
@@ -156,7 +159,7 @@ public record ProfileResponse(
 
         return new ProfileResponse(p.getId(), p.getName(), p.getBirthDate(),
                 p.getCalendarType(), p.getLunarDate(), p.isLeapMonth(), p.getBirthTime(),
-                p.getGender(), p.getBirthPlace(), p.getConcernType(), p.getConcernText(),
+                p.getGender(), p.getBirthPlace(), String.join(",", p.getConcernTypes()), p.getConcernText(),
                 new Saju(pillars, elements, core, balance,
                         new YearInfo(currentSajuYear, yearPillar.korean(), yearPillar.hanja(), yearElement.name()),
                         owned.stream().map(Enum::name).sorted().toList(),
@@ -165,8 +168,10 @@ public record ProfileResponse(
                         Reports.reunionBasic(p.getName(), chart, currentSajuYear),
                         Reports.familyBasic(p.getName(), chart),
                         Reports.studyBasic(p.getName(), chart, currentSajuYear),
-                        Reports.concern(p.getConcernType(), p.getConcernText(), p.getName(), chart, currentSajuYear),
+                        concerns.isEmpty() ? null : concerns.get(0),
+                        concerns,
                         Reports.loveBasic(p.getName(), p.getGender(), chart, currentSajuYear),
+                        Reports.wealthBasic(p.getName(), chart, currentSajuYear),
                         ShinSal.find(chart), ShinSal.all()));
     }
 }
