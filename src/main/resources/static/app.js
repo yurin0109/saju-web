@@ -1359,7 +1359,16 @@ function personFields(pre, label, ph) {
         <label>${label}<input class="input" id="${pre}-name" maxlength="20" placeholder="${ph}" autocomplete="off"></label>
         <label>생년월일 (8자리)<input class="input" id="${pre}-date" inputmode="numeric" maxlength="10" placeholder="예) 19950712" autocomplete="off"></label>
         <label>달력<select class="input" id="${pre}-cal"><option value="SOLAR">양력</option><option value="LUNAR">음력</option></select></label>
-        <label>태어난 시간<input class="input" id="${pre}-time" type="time"></label>
+        <div class="pt-time"><span class="pt-time-label">태어난 시간</span>
+          <div class="time-row">
+            <div class="segment" id="${pre}-ampm" data-ampm="AM">
+              <button type="button" data-value="AM" aria-pressed="true">오전</button>
+              <button type="button" data-value="PM" aria-pressed="false">오후</button>
+            </div>
+            <input class="input" type="text" id="${pre}-time" inputmode="numeric" maxlength="5" placeholder="예) 02:30" autocomplete="off" aria-label="태어난 시간">
+          </div>
+          <span class="help" id="${pre}-time-help">숫자 4자리로 입력해요 (2시 30분 → 0230)</span>
+        </div>
       </div>
       <div class="pt-row">
         <label class="check"><input type="checkbox" id="${pre}-leap"> 윤달</label>
@@ -1374,7 +1383,7 @@ function partnerForm(kind, count, withMe) {
   return `<form class="pt-form" id="pt-form" novalidate>
       ${withMe ? `<h3 class="pt-sub">1. 내 정보</h3>
       <p class="notice">아직 저장된 내 사주가 없어서 내 정보도 함께 받을게요. 내 사주는 <b>내 사주 목록</b>에 저장돼서 다른 풀이에도 쓸 수 있어요.</p>
-      ${personFields('me', '내 이름 또는 별명', '예) 유린')}
+      ${personFields('me', '내 이름 또는 별명', '예) 서연')}
       <h3 class="pt-sub">2. ${v.who} 정보</h3>` : ''}
       <p class="notice">${count
         ? `두 번째 상대부터는 <b>${won(pr?.price || 4900)}</b>으로 그 상대와의 ${v.title}(기본 풀이 + 심화 리포트)을 열 수 있어요.`
@@ -1392,11 +1401,32 @@ function partnerForm(kind, count, withMe) {
 function readPerson(f, pre, gender, who) {
   const dateEl = f.querySelector(`#${pre}-date`);
   const name = f.querySelector(`#${pre}-name`).value.trim(), d = dateEl.value.replace(/\D/g, '');
-  const cal = f.querySelector(`#${pre}-cal`).value, unknown = f.querySelector(`#${pre}-time-unknown`).checked, time = f.querySelector(`#${pre}-time`).value;
+  const cal = f.querySelector(`#${pre}-cal`).value, unknown = f.querySelector(`#${pre}-time-unknown`).checked;
+  const raw = f.querySelector(`#${pre}-time`).value, time = ptTime(f, pre);
   const err = !name ? `${who} 이름을 적어주세요.` : d.length !== 8 ? `${who} 생년월일을 8자리로 적어주세요. 예) 19950712`
-    : !unknown && !time ? `${who} 태어난 시간을 고르거나 "시간 모름"을 체크해주세요.` : !gender ? `${who} 성별을 골라주세요.` : '';
+    : !unknown && !raw ? `${who} 태어난 시간을 적거나 "시간 모름"을 체크해주세요.` : !unknown && !time ? `${who} 태어난 시간을 02:30 이나 20:00 처럼 적어주세요.` : !gender ? `${who} 성별을 골라주세요.` : '';
   return [err, { name, calendar: cal, birthDate: `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`,
     leapMonth: cal === 'LUNAR' && f.querySelector(`#${pre}-leap`).checked, birthTime: unknown ? null : time, gender }];
+}
+
+/** 상대 폼의 오전/오후 + 12시간 → 24시간 "HH:MM" (없거나 틀리면 null) */
+function ptTime(f, pre) {
+  const d = f.querySelector(`#${pre}-time`).value.replace(/\D/g, '');
+  if (d.length !== 4) return null;
+  let h = +d.slice(0, 2); const m = +d.slice(2);
+  if (h > 23 || m > 59) return null;
+  if (h === 0 || h >= 13) return `${d.slice(0, 2)}:${d.slice(2)}`;   // 24시간으로 써도 그대로
+  const am = f.querySelector(`#${pre}-ampm`).dataset.ampm === 'AM';
+  h = am ? (h === 12 ? 0 : h) : (h === 12 ? 12 : h + 12);
+  return `${String(h).padStart(2, '0')}:${d.slice(2)}`;
+}
+function ptTimeHint(f, pre) {
+  const el = f.querySelector(`#${pre}-time-help`), t = ptTime(f, pre);
+  if (!t) { el.textContent = '숫자 4자리로 입력해요 (2시 30분 → 0230, 저녁 8시 → 0800 또는 2000)'; el.classList.remove('time-ok'); return; }
+  const h = +t.slice(0, 2), m = t.slice(3);
+  const word = h === 0 ? '밤 12시(자정)' : h < 6 ? `새벽 ${h}시` : h < 12 ? `아침 ${h}시` : h === 12 ? '낮 12시(정오)' : h < 18 ? `오후 ${h - 12}시` : `저녁 ${h - 12}시`;
+  el.textContent = `→ ${word} ${m}분으로 계산해요`;
+  el.classList.add('time-ok');
 }
 
 function bindPartnerForm(root, p, kind) {
@@ -1407,7 +1437,29 @@ function bindPartnerForm(root, p, kind) {
     dateEl.value = d.length > 6 ? `${d.slice(0, 4)}.${d.slice(4, 6)}.${d.slice(6)}` : d.length > 4 ? `${d.slice(0, 4)}.${d.slice(4)}` : d;
   }));
   f.querySelectorAll('[id$="-time-unknown"]').forEach(c => c.onchange = e => {
-    f.querySelector('#' + c.id.replace('-time-unknown', '-time')).disabled = e.target.checked;
+    const pre = c.id.replace('-time-unknown', ''), t = f.querySelector(`#${pre}-time`);
+    t.disabled = e.target.checked; if (e.target.checked) t.value = '';
+    ptTimeHint(f, pre);
+  });
+  // 태어난 시간: 사주 입력과 똑같이 오전/오후 + 숫자 4자리
+  f.querySelectorAll('.pt-time').forEach(box => {
+    const seg = box.querySelector('.segment'), pre = seg.id.replace('-ampm', ''), t = box.querySelector('input');
+    t.addEventListener('input', () => {
+      const d = t.value.replace(/\D/g, '').slice(0, 4);
+      t.value = d.length > 2 ? `${d.slice(0, 2)}:${d.slice(2)}` : d;
+      const h = d.length >= 2 ? +d.slice(0, 2) : -1, want = h >= 13 && h <= 23 ? 'PM' : h === 0 ? 'AM' : null;
+      if (want && seg.dataset.ampm !== want) {
+        seg.dataset.ampm = want;
+        seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.value === want)));
+      }
+      ptTimeHint(f, pre);
+    });
+    seg.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b || t.disabled) return;
+      seg.dataset.ampm = b.dataset.value;
+      seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+      ptTimeHint(f, pre);
+    });
   });
   f.querySelectorAll('.pt-gender').forEach(g => g.querySelectorAll('[data-ptg]').forEach(b => b.onclick = () => {
     gender[g.dataset.pre] = b.dataset.ptg; g.querySelectorAll('[data-ptg]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
@@ -1867,6 +1919,10 @@ $('f-concern-text').addEventListener('input', e => { $('f-concern-count').textCo
 $('f-time').addEventListener('input', e => {
   const d = e.target.value.replace(/\D/g, '').slice(0, 4);
   e.target.value = d.length > 2 ? `${d.slice(0, 2)}:${d.slice(2)}` : d;
+  // 24시간으로 쓰면(13~23시 → 오후, 00시 → 오전) 오전/오후 버튼도 알아서 맞춰줌
+  const h = d.length >= 2 ? +d.slice(0, 2) : -1;
+  if (h >= 13 && h <= 23 && state.ampm !== 'PM') setAmpm('PM');
+  if (h === 0 && d.length >= 2 && state.ampm !== 'AM') setAmpm('AM');
   timeHint();
 });
 /** 오전/오후 + 12시간 입력 → 24시간 "HH:MM" (오전 12시 = 0시, 오후 12시 = 12시) */
@@ -1874,7 +1930,8 @@ function timeValue() {
   const d = $('f-time').value.replace(/\D/g, '');
   if (d.length !== 4) return null;
   let h = +d.slice(0, 2); const m = +d.slice(2);
-  if (h < 1 || h > 12 || m > 59) return null;
+  if (h > 23 || m > 59) return null;
+  if (h === 0 || h >= 13) return `${d.slice(0, 2)}:${d.slice(2)}`;   // 2000 · 0030 처럼 24시간으로 써도 그대로
   if (state.ampm === 'AM') h = h === 12 ? 0 : h;
   else h = h === 12 ? 12 : h + 12;
   return `${String(h).padStart(2, '0')}:${d.slice(2)}`;
@@ -1887,7 +1944,7 @@ function setAmpm(v) {
 /** 입력한 시간을 '새벽 · 낮 · 밤' 말로 풀어서 보여준다 (오전 12시 = 자정, 오후 12시 = 정오 헷갈림 방지) */
 function timeHint() {
   const el = $('f-time-help'), t = timeValue();
-  if (!t) { el.textContent = '숫자 4자리로 입력해요 (2시 30분 → 0230)'; el.classList.remove('time-ok'); return; }
+  if (!t) { el.textContent = '숫자 4자리로 입력해요 (2시 30분 → 0230, 저녁 8시 → 0800 또는 2000)'; el.classList.remove('time-ok'); return; }
   const h = +t.slice(0, 2), m = t.slice(3);
   const word = h === 0 ? '밤 12시(자정)' : h < 6 ? `새벽 ${h}시` : h < 12 ? `아침 ${h}시` : h === 12 ? '낮 12시(정오)' : h < 18 ? `오후 ${h - 12}시` : `저녁 ${h - 12}시`;
   el.textContent = `→ ${word} ${m}분으로 계산해요 (24시간 ${t})` + (h === 0 || h === 12 ? ' · 오전 12시는 자정, 오후 12시는 정오예요' : '');
@@ -1974,7 +2031,7 @@ form.addEventListener('submit', async e => {
     if (dt > new Date()) return fail('생년월일은 오늘 이전이어야 해요.', $('f-date'));
   }
   if (!unknown && !$('f-time').value) return fail('태어난 시간을 입력하거나 "시간을 몰라요"를 선택해주세요.', $('f-time'));
-  if (!unknown && !time) return fail('태어난 시간은 1 ~ 12시 사이로, 02:30 처럼 입력해주세요.', $('f-time'));
+  if (!unknown && !time) return fail('태어난 시간을 02:30 이나 20:00 처럼 입력해주세요.', $('f-time'));
   if (!state.gender) return fail('성별을 선택해주세요.');
   if (!$('f-agree').checked) return fail('출생 정보 이용에 동의해주세요.');
   $('form-error').textContent = '';

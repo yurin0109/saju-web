@@ -938,8 +938,11 @@
   .pt-chip[aria-selected="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
   .pt-chip.add { border-style: dashed; color: var(--accent); }
   .pt-form { display: flex; flex-direction: column; gap: 14px; }
+  .pt-time { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--body); min-width: 0; }
+  .pt-time .help { font-size: 12px; }
+  .pt-time .time-row { margin: 0; }
   .pt-sub { font-size: 15px; margin: 6px 0 -4px; color: var(--accent); }
-  .pt-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .pt-grid { display: grid; grid-template-columns: 1fr 1fr .7fr 1.6fr; gap: 12px; align-items: start; }
   .pt-grid label { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--body); }
   .pt-row { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
   .pt-gender { display: inline-flex; gap: 6px; margin-left: auto; }
@@ -951,7 +954,7 @@
   .pt-locked h3 { font-family: var(--serif); font-size: 20px; font-weight: 500; color: var(--text); }
   .pt-locked p { font-size: 14px; color: var(--body); max-width: 460px; line-height: 1.7; }
   .pt-del { text-align: right; margin-top: 8px; }
-  @media (max-width: 860px) { .pt-grid { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 860px) { .pt-grid { grid-template-columns: 1fr 1fr; } .pt-time { grid-column: 1 / -1; } }
   @media (max-width: 520px) { .pt-grid { grid-template-columns: 1fr; } .pt-gender { margin-left: 0; } .pt-actions .btn { flex: 1; } }
 </style>
 </head>
@@ -1102,7 +1105,7 @@
             </div>
             <input class="input" type="text" id="f-time" inputmode="numeric" maxlength="5" placeholder="예) 02:30" autocomplete="off">
           </div>
-          <span class="help" id="f-time-help">숫자 4자리로 입력해요 (2시 30분 → 0230)</span>
+          <span class="help" id="f-time-help">숫자 4자리로 입력해요 (2시 30분 → 0230, 저녁 8시 → 0800 또는 2000)</span>
           <label class="check"><input type="checkbox" id="f-time-unknown"> 태어난 시간을 몰라요</label>
         </div>
         <div class="field">
@@ -1467,6 +1470,6 @@
 
 <div class="toast" id="toast"></div>
 
-<script src="/app.js?v=16"></script>
+<script src="/app.js?v=19"></script>
 </body>
 </html>
