@@ -868,7 +868,7 @@ document.addEventListener('click', e => {
 
 function buyButtons(p, code) {
   const one = product(code), bundle = product('BUNDLE');
-  const bundleUseful = BUNDLE_CODES().some(c => !owns(p, c));
+  const bundleUseful = !PER_PARTNER.includes(code) && BUNDLE_CODES().some(c => !owns(p, c));   // 궁합 · 재회운은 묶음에 없으니 묶음 버튼을 안 보여줌
   return `
     <button class="btn btn-primary" data-buy="${code}">${one ? won(one.price) : ''} · 심화 리포트 열기</button>
     ${bundleUseful && bundle ? `<button class="btn btn-ghost" data-buy="BUNDLE">6종 묶음 ${won(bundle.price)}</button>` : ''}`;
@@ -1291,7 +1291,15 @@ async function renderPartnerTopic(kind) {
   const v = PARTNER_VIEW[kind];
   const root = document.getElementById('love-body');
   const p = current();
-  if (!p) { root.innerHTML = emptyTopic(v.icon, v.crumb); return; }
+  if (!p) {
+    // 내 사주가 아직 없으면: 내 정보 + 상대 정보를 한 번에 받아서 바로 풀이
+    root.innerHTML = `<div style="display:flex;flex-direction:column;gap:28px">
+      <div class="crumb-row"><span class="crumb">사랑운 / ${v.crumb}</span><span class="tag">${v.icon} ${v.crumb}</span></div>
+      <div class="intro"><span class="eyebrow">${v.eyebrow}</span><h1 class="title">${v.title}</h1><p class="lead">${v.lead}</p></div>
+      <article class="card reading-main">${partnerForm(kind, 0, true)}</article></div>`;
+    bindPartnerForm(root, null, kind);
+    return;
+  }
   state.partnersBy = state.partnersBy || {}; state.partnerSel = state.partnerSel || {}; state.addingBy = state.addingBy || {};
   let partners = [];
   try { partners = await request(`/api/profiles/${p.id}/partners?kind=${kind}`); } catch {}
@@ -1310,26 +1318,7 @@ async function renderPartnerTopic(kind) {
         ${esc(x.name)}<small>${x.free ? '무료' : x.unlocked ? '✓ 열림' : '🔒'}</small></button>`).join('')}
       <button type="button" class="pt-chip add" data-partner-add="${kind}" aria-selected="${adding}">＋ 상대 추가</button></div>` : '';
 
-  const form = `<form class="pt-form" id="pt-form" novalidate>
-      <p class="notice">${partners.length
-        ? `두 번째 상대부터는 <b>${won(pr?.price || 4900)}</b>으로 그 상대와의 ${v.title}(기본 풀이 + 심화 리포트)을 열 수 있어요.`
-        : `${v.who}의 출생 정보를 적어주세요. <b>첫 번째 상대는 무료</b>로 ${v.title}을 볼 수 있어요.`}</p>
-      <div class="pt-grid">
-        <label>상대 이름 또는 별명<input class="input" id="pt-name" maxlength="20" placeholder="예) 민준" autocomplete="off"></label>
-        <label>생년월일 (8자리)<input class="input" id="pt-date" inputmode="numeric" maxlength="10" placeholder="예) 19950712" autocomplete="off"></label>
-        <label>달력<select class="input" id="pt-cal"><option value="SOLAR">양력</option><option value="LUNAR">음력</option></select></label>
-        <label>태어난 시간<input class="input" id="pt-time" type="time"></label>
-      </div>
-      <div class="pt-row">
-        <label class="check"><input type="checkbox" id="pt-leap"> 윤달</label>
-        <label class="check"><input type="checkbox" id="pt-time-unknown"> 시간 모름</label>
-        <span class="pt-gender" role="group" aria-label="성별"><button type="button" data-ptg="F" aria-pressed="false">여성</button><button type="button" data-ptg="M" aria-pressed="false">남성</button></span>
-      </div>
-      <p class="notice">상대의 정보는 이 풀이에만 쓰이고, 결제와 이어져 있어 나중에 수정할 수 없어요. 상대의 동의를 받고 입력해주세요.</p>
-      <p class="pay-error" id="pt-error" role="alert"></p>
-      <div class="pt-actions">${partners.length ? `<button type="button" class="btn btn-line" data-partner-cancel="${kind}">취소</button>` : ''}
-        <button type="submit" class="btn btn-primary">${partners.length ? '상대 추가하기' : v.first}</button></div>
-    </form>`;
+  const form = partnerForm(kind, partners.length, false);
 
   const locked = sel && !open ? `<div class="pt-locked">
       <span class="big">🔒</span>
@@ -1364,34 +1353,100 @@ function reunionHero(me, ex, score) {
 }
 
 /** 상대 입력 칸 */
+/** 사람 한 명의 출생 정보 칸 (pre: 'pt' = 상대, 'me' = 나) */
+function personFields(pre, label, ph) {
+  return `<div class="pt-grid">
+        <label>${label}<input class="input" id="${pre}-name" maxlength="20" placeholder="${ph}" autocomplete="off"></label>
+        <label>생년월일 (8자리)<input class="input" id="${pre}-date" inputmode="numeric" maxlength="10" placeholder="예) 19950712" autocomplete="off"></label>
+        <label>달력<select class="input" id="${pre}-cal"><option value="SOLAR">양력</option><option value="LUNAR">음력</option></select></label>
+        <label>태어난 시간<input class="input" id="${pre}-time" type="time"></label>
+      </div>
+      <div class="pt-row">
+        <label class="check"><input type="checkbox" id="${pre}-leap"> 윤달</label>
+        <label class="check"><input type="checkbox" id="${pre}-time-unknown"> 시간 모름</label>
+        <span class="pt-gender" role="group" aria-label="성별" data-pre="${pre}"><button type="button" data-ptg="F" aria-pressed="false">여성</button><button type="button" data-ptg="M" aria-pressed="false">남성</button></span>
+      </div>`;
+}
+
+/** 상대 입력 폼. withMe = 내 사주가 아직 없을 때 내 정보도 같이 받기 */
+function partnerForm(kind, count, withMe) {
+  const v = PARTNER_VIEW[kind], pr = product(kind);
+  return `<form class="pt-form" id="pt-form" novalidate>
+      ${withMe ? `<h3 class="pt-sub">1. 내 정보</h3>
+      <p class="notice">아직 저장된 내 사주가 없어서 내 정보도 함께 받을게요. 내 사주는 <b>내 사주 목록</b>에 저장돼서 다른 풀이에도 쓸 수 있어요.</p>
+      ${personFields('me', '내 이름 또는 별명', '예) 유린')}
+      <h3 class="pt-sub">2. ${v.who} 정보</h3>` : ''}
+      <p class="notice">${count
+        ? `두 번째 상대부터는 <b>${won(pr?.price || 4900)}</b>으로 그 상대와의 ${v.title}(기본 풀이 + 심화 리포트)을 열 수 있어요.`
+        : `${v.who}의 출생 정보를 적어주세요. <b>첫 번째 상대는 무료</b>로 ${v.title}을 볼 수 있어요.`}</p>
+      ${personFields('pt', '상대 이름 또는 별명', '예) 민준')}
+      <p class="notice">상대의 정보는 이 풀이에만 쓰이고, 결제와 이어져 있어 나중에 수정할 수 없어요. 상대의 동의를 받고 입력해주세요.</p>
+      ${withMe ? '<label class="check"><input type="checkbox" id="me-agree"> 출생 정보를 사주 풀이에 이용하는 데 동의해요</label>' : ''}
+      <p class="pay-error" id="pt-error" role="alert"></p>
+      <div class="pt-actions">${count ? `<button type="button" class="btn btn-line" data-partner-cancel="${kind}">취소</button>` : ''}
+        <button type="submit" class="btn btn-primary">${count ? '상대 추가하기' : v.first}</button></div>
+    </form>`;
+}
+
+/** 폼에서 한 사람 정보를 읽어 검사 → [에러 문구, 요청 body] */
+function readPerson(f, pre, gender, who) {
+  const dateEl = f.querySelector(`#${pre}-date`);
+  const name = f.querySelector(`#${pre}-name`).value.trim(), d = dateEl.value.replace(/\D/g, '');
+  const cal = f.querySelector(`#${pre}-cal`).value, unknown = f.querySelector(`#${pre}-time-unknown`).checked, time = f.querySelector(`#${pre}-time`).value;
+  const err = !name ? `${who} 이름을 적어주세요.` : d.length !== 8 ? `${who} 생년월일을 8자리로 적어주세요. 예) 19950712`
+    : !unknown && !time ? `${who} 태어난 시간을 고르거나 "시간 모름"을 체크해주세요.` : !gender ? `${who} 성별을 골라주세요.` : '';
+  return [err, { name, calendar: cal, birthDate: `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`,
+    leapMonth: cal === 'LUNAR' && f.querySelector(`#${pre}-leap`).checked, birthTime: unknown ? null : time, gender }];
+}
+
 function bindPartnerForm(root, p, kind) {
   const f = root.querySelector('#pt-form');
-  let gender = null;
-  const dateEl = f.querySelector('#pt-date');
-  dateEl.addEventListener('input', () => {
+  const gender = {};
+  f.querySelectorAll('[id$="-date"]').forEach(dateEl => dateEl.addEventListener('input', () => {
     const d = dateEl.value.replace(/\D/g, '').slice(0, 8);
     dateEl.value = d.length > 6 ? `${d.slice(0, 4)}.${d.slice(4, 6)}.${d.slice(6)}` : d.length > 4 ? `${d.slice(0, 4)}.${d.slice(4)}` : d;
+  }));
+  f.querySelectorAll('[id$="-time-unknown"]').forEach(c => c.onchange = e => {
+    f.querySelector('#' + c.id.replace('-time-unknown', '-time')).disabled = e.target.checked;
   });
-  f.querySelector('#pt-time-unknown').onchange = e => { f.querySelector('#pt-time').disabled = e.target.checked; };
-  f.querySelectorAll('[data-ptg]').forEach(b => b.onclick = () => {
-    gender = b.dataset.ptg; f.querySelectorAll('[data-ptg]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-  });
+  f.querySelectorAll('.pt-gender').forEach(g => g.querySelectorAll('[data-ptg]').forEach(b => b.onclick = () => {
+    gender[g.dataset.pre] = b.dataset.ptg; g.querySelectorAll('[data-ptg]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  }));
+  let busy = false;
   f.onsubmit = async e => {
     e.preventDefault();
+    if (busy) return;
     const err = f.querySelector('#pt-error');
-    const name = f.querySelector('#pt-name').value.trim(), d = dateEl.value.replace(/\D/g, '');
-    const cal = f.querySelector('#pt-cal').value, unknown = f.querySelector('#pt-time-unknown').checked, time = f.querySelector('#pt-time').value;
-    err.textContent = !name ? '상대 이름을 적어주세요.' : d.length !== 8 ? '생년월일을 8자리로 적어주세요. 예) 19950712'
-      : !unknown && !time ? '태어난 시간을 고르거나 "시간 모름"을 체크해주세요.' : !gender ? '성별을 골라주세요.' : '';
-    if (err.textContent) return;
+    let meBody = null;
+    if (!p) {
+      const [e1, b1] = readPerson(f, 'me', gender.me, '내');
+      if (e1) { err.textContent = e1; return; }
+      meBody = b1;
+    }
+    const [e2, body] = readPerson(f, 'pt', gender.pt, '상대');
+    if (e2) { err.textContent = e2; return; }
+    if (!p && !f.querySelector('#me-agree').checked) { err.textContent = '출생 정보 이용에 동의해주세요.'; return; }
+    err.textContent = '';
+    busy = true;
     try {
-      const added = await request(`/api/profiles/${p.id}/partners?kind=${kind}`, { method: 'POST', body: JSON.stringify({
-        name, calendar: cal, birthDate: `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`, leapMonth: cal === 'LUNAR' && f.querySelector('#pt-leap').checked,
-        birthTime: unknown ? null : time, gender }) });
+      let me = p;
+      if (!me) {
+        // 내 사주를 먼저 저장하고 보고 있는 사주로 지정 (상대 저장이 실패해도 내 사주는 남아서 다시 시도 가능)
+        const saved = await api('', { method: 'POST', body: JSON.stringify(meBody) });
+        await loadProfiles(); setCurrent(saved.id); me = current() || saved;
+      }
+      const added = await request(`/api/profiles/${me.id}/partners?kind=${kind}`, { method: 'POST', body: JSON.stringify(body) });
+      state.addingBy = state.addingBy || {}; state.partnerSel = state.partnerSel || {};
       state.addingBy[kind] = false; state.partnerSel[kind] = String(added.id);
       toast(added.free ? '무료로 볼 수 있어요 ✨' : '상대를 추가했어요. 열면 볼 수 있어요');
       renderPartnerTopic(kind);
-    } catch (x) { err.textContent = x.message; }
+    } catch (x) {
+      err.textContent = x.message;
+      if (!p && current()) {   // 내 사주는 저장됐으니 상대만 다시 입력하는 화면으로
+        await renderPartnerTopic(kind);
+        const e3 = document.getElementById('pt-error'); if (e3) e3.textContent = x.message;
+      }
+    } finally { busy = false; }
   };
 }
 
