@@ -57,6 +57,9 @@ public class SecurityHeadersFilter implements Filter {
         response.setHeader("Cross-Origin-Resource-Policy", "same-origin");
         if (path.startsWith("/api/")) {
             response.setHeader("Cache-Control", "no-store");
+        } else if (path.equals("/") || path.endsWith(".html")) {
+            // 화면(HTML)은 매번 서버에 새 버전이 있는지 확인 → 새로 배포하면 바로 반영 (예전 화면이 캐시로 남지 않게)
+            response.setHeader("Cache-Control", "no-cache");
         }
         chain.doFilter(req, res);
     }
